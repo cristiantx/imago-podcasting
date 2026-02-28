@@ -23,48 +23,52 @@ Core backend building blocks:
 ## 2) Main flow diagram (Mermaid)
 
 ```mermaid
-flowchart LR
-    U["User"] --> I["POST /api/podcasts/import"]
-    I --> A["Require user auth"]
-    A --> R["Start import service"]
+flowchart TD
+    START(["Start: user action"]) --> I["POST /api/podcasts/import"]
+    I --> A{"Authorized user?"}
+    A -->|No| AUTHFAIL["Return unauthorized"]
+    A -->|Yes| R["Start import service"]
+
     R --> F["Parse RSS feed"]
-    R --> E["Reserve entitlement units"]
-    R --> P["Upsert podcast and insert queued episodes"]
+    F --> E["Reserve entitlement units"]
+    E --> P["Upsert podcast and insert queued episodes"]
     P --> J["Create or update ingest job"]
-    J --> D{"Dispatch Inngest event"}
+    J --> D{"Dispatch import event?"}
 
-    D -->|yes| EV["Send podcast import requested event"]
-    D -->|no| DF["Mark dispatch failed on job and podcast"]
+    D -->|No| DF["Mark dispatch failed on job and podcast"]
     DF --> RT["POST retry queue route"]
-    RT --> EV
+    RT --> EV["Send podcast import requested event"]
+    D -->|Yes| EV
 
-    EV --> W["Inngest import function"]
-    W --> L["Load job and mark processing"]
-    L --> LOOP["Loop over episode IDs"]
-    LOOP --> EP["Process one episode pipeline"]
+    EV --> ORCH["Inngest import orchestrator"]
+    ORCH --> FANOUT["Emit one episode process event per episode"]
+    FANOUT --> WORKER["Inngest episode process function"]
+    WORKER --> PIPE["Process episode pipeline"]
 
-    EP --> B["Download source audio and upload to Blob"]
+    PIPE --> B["Download source audio and upload to Blob"]
     B --> T["Transcribe in Deepgram"]
     T --> C["Chunk transcript text"]
     C --> M["Generate embeddings"]
     M --> V["Upsert vectors to Pinecone user namespace"]
     V --> S["Write transcript segments in Postgres"]
     S --> OK["Mark episode completed and consume unit"]
-
-    EP --> ERR["On error mark episode failed and release unit"]
+    PIPE --> ERR["On error mark episode failed and release unit"]
     OK --> CLEAN["Delete temporary Blob audio"]
     ERR --> CLEAN
-    CLEAN --> PROG["Update ingest job progress counters"]
-    PROG --> LOOP
 
-    LOOP --> DONE["Finalize ingest job status"]
-    DONE --> PST["Finalize podcast status"]
+    CLEAN --> PROG["Sync ingest job counters from DB state"]
+    PROG --> DONE{"All queued episodes processed?"}
+    DONE -->|No| FANOUT
+    DONE -->|Yes| FINAL["Finalize ingest job and podcast status"]
 
-    U --> Q["POST /api/search"]
+    START --> Q["POST /api/search"]
     Q --> QE["Embed search query"]
-    QE --> PQ["Query Pinecone by podcast filter"]
+    QE --> PQ["Query Pinecone with podcast filter"]
     PQ --> DD["Dedupe nearby chunk matches"]
-    DD --> SR["Return timestamped results and log search"]
+    DD --> SR["Return timestamped results and write search log"]
+    FINAL --> END(["End"])
+    SR --> END
+    AUTHFAIL --> END
 ```
 
 ## 3) Ingestion and event lifecycle
@@ -73,8 +77,9 @@ flowchart LR
 2. Backend parses RSS, filters already-known GUIDs, and reserves episode units from entitlement capacity.
 3. Backend inserts `episodes` (status `queued`) and an `ingest_jobs` record.
 4. Backend dispatches Inngest event `podcast/import.requested`.
-5. Inngest worker processes each episode, updating counters after each item.
-6. Job/podcast status is finalized:
+5. Orchestrator function fans out one `podcast/episode.process.requested` event per episode.
+6. Episode worker processes each episode independently and syncs job counters from episode statuses.
+7. Job/podcast status is finalized:
 - success path: `ingest_jobs.status = completed`, `podcasts.status = ready`
 - partial failure path: `ingest_jobs.status = completed_with_errors`, `podcasts.status = ready_with_errors`
 - dispatch failure path: `queueDispatchStatus = failed`, `podcasts.status = dispatch_failed`

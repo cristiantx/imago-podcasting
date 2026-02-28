@@ -71,7 +71,7 @@ export function StatusBoard() {
   const [requestedEpisodes, setRequestedEpisodes] = useState(5);
   const [loadingPodcasts, setLoadingPodcasts] = useState(true);
   const [loadingEpisodes, setLoadingEpisodes] = useState(false);
-  const [runningAction, setRunningAction] = useState<"resync" | "retry" | null>(null);
+  const [runningAction, setRunningAction] = useState<"resync" | "retry" | "delete" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -107,12 +107,17 @@ export function StatusBoard() {
 
       const rows = (payload as PodcastsPayload).podcasts;
       setPodcasts(rows);
+      setSelectedPodcastId((current) => {
+        if (rows.length === 0) {
+          return null;
+        }
 
-      if (rows.length > 0) {
-        setSelectedPodcastId((current) => current ?? rows[0].id);
-      } else {
-        setSelectedPodcastId(null);
-      }
+        if (current && rows.some((podcast) => podcast.id === current)) {
+          return current;
+        }
+
+        return rows[0].id;
+      });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load podcasts");
     } finally {
@@ -195,6 +200,40 @@ export function StatusBoard() {
       await refreshEpisodes(selectedPodcastId);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to retry queue dispatch");
+    } finally {
+      setRunningAction(null);
+    }
+  }
+
+  async function runDeletePodcast() {
+    if (!selectedPodcastId || runningAction !== null) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Delete this podcast and all related episodes, transcripts, jobs, and search logs? Usage history will be kept."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setRunningAction("delete");
+    setMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/podcasts/${selectedPodcastId}`, { method: "DELETE" });
+      const payload = (await response.json()) as { error?: string; message?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to delete podcast");
+      }
+
+      setMessage(payload.message ?? "Podcast deleted.");
+      await refreshPodcasts();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to delete podcast");
     } finally {
       setRunningAction(null);
     }
@@ -338,6 +377,10 @@ export function StatusBoard() {
 
             <Button variant="outline" className="w-full" onClick={runRetryDispatch} disabled={!selectedPodcastId || runningAction !== null}>
               {runningAction === "retry" ? "Retrying..." : "Retry Queue Dispatch"}
+            </Button>
+
+            <Button variant="destructive" className="w-full" onClick={runDeletePodcast} disabled={!selectedPodcastId || runningAction !== null}>
+              {runningAction === "delete" ? "Deleting Podcast..." : "Delete Podcast"}
             </Button>
 
             <Button variant="secondary" asChild className="w-full">

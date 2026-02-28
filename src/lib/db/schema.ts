@@ -127,7 +127,7 @@ export const usageLedger = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     clerkUserId: varchar("clerk_user_id", { length: 191 }).notNull(),
-    podcastId: uuid("podcast_id").notNull(),
+    podcastId: uuid("podcast_id"),
     episodeId: uuid("episode_id"),
     units: integer("units").notNull().default(1),
     source: varchar("source", { length: 16 }).notNull(),
@@ -142,7 +142,7 @@ export const usageLedger = pgTable(
       columns: [table.podcastId],
       foreignColumns: [podcasts.id],
       name: "usage_ledger_podcast_id_fk"
-    }),
+    }).onDelete("set null"),
     index("usage_ledger_clerk_user_id_idx").on(table.clerkUserId),
     index("usage_ledger_podcast_id_idx").on(table.podcastId)
   ]
