@@ -1,35 +1,33 @@
-import { SignedIn, SignedOut } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import type { Route } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await auth();
+
+  if (session.userId) {
+    redirect("/dashboard");
+  }
+
   return (
-    <Card>
+    <Card className="mx-auto max-w-3xl">
       <CardHeader>
-        <CardTitle className="text-4xl leading-[0.95] md:text-5xl">Your entire podcast archive, searchable by meaning.</CardTitle>
-        <CardDescription className="max-w-3xl text-base">
-          Paste one RSS feed and index your full catalog with speaker-aware transcripts, semantic vectors, and timestamped results.
+        <CardTitle className="text-4xl">Find quotes across every episode instantly.</CardTitle>
+        <CardDescription className="text-base">
+          Import your RSS feed, transcribe episodes, and explore everything with semantic search and timestamped results.
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-wrap gap-3">
-          <SignedOut>
-            <Button asChild>
-              <Link href={"/sign-up" as Route}>Start Free</Link>
-            </Button>
-          </SignedOut>
-          <SignedIn>
-            <Button asChild>
-              <Link href={"/onboarding" as Route}>Connect RSS Feed</Link>
-            </Button>
-          </SignedIn>
-          <Button variant="secondary" asChild>
-            <Link href={"/search" as Route}>View Search Demo</Link>
-          </Button>
-        </div>
+      <CardContent className="flex flex-wrap gap-3">
+        <Button asChild>
+          <Link href={"/sign-up" as Route}>Get Started</Link>
+        </Button>
+        <Button variant="secondary" asChild>
+          <Link href={"/sign-in" as Route}>Sign In</Link>
+        </Button>
       </CardContent>
     </Card>
   );

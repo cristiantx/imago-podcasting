@@ -78,9 +78,9 @@ export function RssImportForm() {
       {result ? (
         <Card className={result.queueDispatchStatus === "failed" ? "border-destructive/40 bg-destructive/5" : "border-primary/20 bg-primary/5"}>
           <CardContent className="space-y-1 p-4">
-            <p className="text-sm font-semibold">Import queued.</p>
+            <p className="text-sm font-semibold">Import scheduled.</p>
             <p className="text-sm text-muted-foreground">
-              Job {result.jobId.slice(0, 8)} started for podcast {result.podcastId.slice(0, 8)}. Allowed episodes: {result.allowedEpisodes}. Remaining after reservation: {result.remainingAfterReservation}.
+              We started ingestion for up to {result.allowedEpisodes} episodes. You can monitor progress from the Dashboard.
             </p>
             <p className="text-sm">
               Queue dispatch status: <span className="font-semibold">{result.queueDispatchStatus}</span>

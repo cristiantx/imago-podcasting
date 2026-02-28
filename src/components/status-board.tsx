@@ -1,19 +1,27 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
-type StatusPayload = {
-  podcast: {
-    id: string;
-    title: string | null;
-    feedUrl: string;
-    status: string;
-    lastSyncedAt: string | null;
+type PodcastSummary = {
+  id: string;
+  title: string | null;
+  description: string | null;
+  feedUrl: string;
+  imageUrl: string | null;
+  language: string;
+  status: string;
+  lastSyncedAt: string | null;
+  episodeCount: number;
+  stageCounts: {
+    queued: number;
+    processing: number;
+    completed: number;
+    failed: number;
   };
   latestJob: {
     id: string;
@@ -21,183 +29,374 @@ type StatusPayload = {
     totalItems: number;
     processedItems: number;
     failedItems: number;
-    errorSummary: string | null;
-    queueDispatchStatus?: string;
-    queueDispatchAttempts?: number;
-    queueDispatchError?: string | null;
+    queueDispatchStatus: string;
+    queueDispatchAttempts: number;
+    queueDispatchError: string | null;
   } | null;
-  stageCounts: {
-    queued: number;
-    processing: number;
-    completed: number;
-    failed: number;
-  };
 };
 
-type RetryPayload = {
-  message: string;
-  queueDispatchStatus: string;
-  queueDispatchError: string | null;
-  queuedEpisodes: number;
+type PodcastsPayload = {
+  podcasts: PodcastSummary[];
+};
+
+type EpisodeItem = {
+  id: string;
+  title: string;
+  publishedAt: string | null;
+  status: string;
+  durationSec: number | null;
+  episodeUrl: string | null;
+  audioUrl: string;
+  errorMessage: string | null;
+  isTranscribed: boolean;
+  segmentCount: number;
+};
+
+type EpisodesPayload = {
+  podcast: {
+    id: string;
+    title: string | null;
+    status: string;
+    feedUrl: string;
+  };
+  latestJob: PodcastSummary["latestJob"];
+  stageCounts: PodcastSummary["stageCounts"];
+  episodes: EpisodeItem[];
 };
 
 export function StatusBoard() {
-  const [podcastId, setPodcastId] = useState("");
-  const [data, setData] = useState<StatusPayload | null>(null);
+  const [podcasts, setPodcasts] = useState<PodcastSummary[]>([]);
+  const [selectedPodcastId, setSelectedPodcastId] = useState<string | null>(null);
+  const [episodesData, setEpisodesData] = useState<EpisodesPayload | null>(null);
+  const [requestedEpisodes, setRequestedEpisodes] = useState(5);
+  const [loadingPodcasts, setLoadingPodcasts] = useState(true);
+  const [loadingEpisodes, setLoadingEpisodes] = useState(false);
+  const [runningAction, setRunningAction] = useState<"resync" | "retry" | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [retrying, setRetrying] = useState(false);
-  const [retryMessage, setRetryMessage] = useState<string | null>(null);
 
-  async function fetchStatus(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoading(true);
-    setError(null);
+  useEffect(() => {
+    void refreshPodcasts();
+  }, []);
 
-    try {
-      const res = await fetch(`/api/podcasts/${podcastId}/status`);
-      const payload = (await res.json()) as StatusPayload | { error: string };
-
-      if (!res.ok) {
-        throw new Error("error" in payload ? payload.error : "Failed to load status.");
-      }
-
-      setData(payload as StatusPayload);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Unknown error.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function retryQueueDispatch() {
-    if (!podcastId) {
+  useEffect(() => {
+    if (!selectedPodcastId) {
+      setEpisodesData(null);
       return;
     }
 
-    setRetrying(true);
-    setRetryMessage(null);
+    void refreshEpisodes(selectedPodcastId);
+  }, [selectedPodcastId]);
+
+  const selectedPodcast = useMemo(
+    () => podcasts.find((podcast) => podcast.id === selectedPodcastId) ?? null,
+    [podcasts, selectedPodcastId]
+  );
+
+  async function refreshPodcasts() {
+    setLoadingPodcasts(true);
     setError(null);
 
     try {
-      const res = await fetch(`/api/podcasts/${podcastId}/retry-queue`, {
-        method: "POST"
-      });
-      const payload = (await res.json()) as RetryPayload | { error: string };
+      const response = await fetch("/api/podcasts");
+      const payload = (await response.json()) as PodcastsPayload | { error: string };
 
-      if (!res.ok) {
-        throw new Error("error" in payload ? payload.error : "Retry failed");
+      if (!response.ok) {
+        throw new Error("error" in payload ? payload.error : "Failed to load podcasts.");
       }
 
-      const retry = payload as RetryPayload;
-      setRetryMessage(
-        retry.queueDispatchStatus === "sent"
-          ? `Queue retry succeeded for ${retry.queuedEpisodes} queued episode(s).`
-          : retry.message
-      );
+      const rows = (payload as PodcastsPayload).podcasts;
+      setPodcasts(rows);
 
-      const statusRes = await fetch(`/api/podcasts/${podcastId}/status`);
-      if (statusRes.ok) {
-        const statusPayload = (await statusRes.json()) as StatusPayload;
-        setData(statusPayload);
+      if (rows.length > 0) {
+        setSelectedPodcastId((current) => current ?? rows[0].id);
+      } else {
+        setSelectedPodcastId(null);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Retry failed");
+      setError(err instanceof Error ? err.message : "Failed to load podcasts");
     } finally {
-      setRetrying(false);
+      setLoadingPodcasts(false);
     }
   }
 
-  const canRetryDispatch =
-    data?.latestJob &&
-    (data.latestJob.queueDispatchStatus === "failed" || data.latestJob.queueDispatchStatus === "pending") &&
-    data.stageCounts.processing === 0;
+  async function refreshEpisodes(podcastId: string) {
+    setLoadingEpisodes(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/podcasts/${podcastId}/episodes`);
+      const payload = (await response.json()) as EpisodesPayload | { error: string };
+      if (!response.ok) {
+        throw new Error("error" in payload ? payload.error : "Failed to load episodes.");
+      }
+      setEpisodesData(payload as EpisodesPayload);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load episodes");
+    } finally {
+      setLoadingEpisodes(false);
+    }
+  }
+
+  async function runResync() {
+    if (!selectedPodcastId) {
+      return;
+    }
+
+    setRunningAction("resync");
+    setMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/podcasts/${selectedPodcastId}/resync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestedEpisodes })
+      });
+
+      const payload = (await response.json()) as { error?: string; queueDispatchStatus?: string; queueDispatchError?: string | null };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to start resync");
+      }
+
+      if (payload.queueDispatchStatus === "failed") {
+        setMessage(`Resync created, but queue dispatch failed: ${payload.queueDispatchError ?? "unknown error"}`);
+      } else {
+        setMessage("Resync started successfully.");
+      }
+
+      await refreshPodcasts();
+      await refreshEpisodes(selectedPodcastId);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to start resync");
+    } finally {
+      setRunningAction(null);
+    }
+  }
+
+  async function runRetryDispatch() {
+    if (!selectedPodcastId) {
+      return;
+    }
+
+    setRunningAction("retry");
+    setMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/podcasts/${selectedPodcastId}/retry-queue`, { method: "POST" });
+      const payload = (await response.json()) as { error?: string; message?: string; queueDispatchStatus?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to retry queue dispatch");
+      }
+
+      setMessage(payload.message ?? "Queue dispatch retried.");
+      await refreshPodcasts();
+      await refreshEpisodes(selectedPodcastId);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to retry queue dispatch");
+    } finally {
+      setRunningAction(null);
+    }
+  }
 
   return (
-    <Card>
-      <CardContent className="space-y-5 p-6">
-        <form className="space-y-3" onSubmit={fetchStatus}>
-          <div className="space-y-2">
-            <Label htmlFor="status-podcast-id">Podcast ID</Label>
-            <Input id="status-podcast-id" value={podcastId} onChange={(event) => setPodcastId(event.target.value)} placeholder="UUID" required />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" variant="secondary" disabled={loading}>
-              {loading ? "Loading..." : "Load Status"}
+    <section className="grid gap-4 xl:grid-cols-[minmax(0,1.9fr)_330px]">
+      <div className="space-y-4">
+        <Card className="overflow-hidden border-transparent bg-gradient-to-r from-[#6f63f4] via-[#6b60ea] to-[#7f75ff] text-white">
+          <CardContent className="relative p-6 md:p-7">
+            <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/15 blur-2xl" />
+            <div className="absolute bottom-0 right-16 h-20 w-20 rounded-full bg-white/10 blur-xl" />
+            <p className="text-xs uppercase tracking-[0.18em] text-white/80">Podcast Archive</p>
+            <h2 className="mt-2 max-w-xl text-3xl font-semibold md:text-4xl">Explore every episode, quote, and story without scrubbing audio.</h2>
+            <p className="mt-2 max-w-lg text-sm text-white/85">
+              Browse podcasts, track transcription state, retry failed queue dispatches, and export transcripts directly.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-2xl">Your Podcasts</CardTitle>
+            <CardDescription>Select a podcast to inspect episodes and transcript availability.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {loadingPodcasts ? <p className="text-sm text-muted-foreground">Loading podcasts...</p> : null}
+            {!loadingPodcasts && podcasts.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
+                No podcasts yet. Add your RSS feed from the Add Feed page.
+              </div>
+            ) : null}
+
+            {podcasts.map((podcast) => {
+              const active = selectedPodcastId === podcast.id;
+              return (
+                <button
+                  key={podcast.id}
+                  type="button"
+                  onClick={() => setSelectedPodcastId(podcast.id)}
+                  className={`w-full rounded-2xl border p-4 text-left transition ${
+                    active
+                      ? "border-primary/50 bg-primary/5 shadow-[0_10px_30px_rgba(111,99,244,0.2)]"
+                      : "border-border/80 bg-white hover:border-primary/35"
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-lg font-semibold">{podcast.title ?? "Untitled Podcast"}</h3>
+                    <Badge variant={podcast.status.includes("failed") ? "outline" : "secondary"}>{podcast.status}</Badge>
+                  </div>
+                  <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">{podcast.feedUrl}</p>
+                  <div className="mt-3 grid grid-cols-4 gap-2 text-xs text-muted-foreground">
+                    <StatMini label="Episodes" value={podcast.episodeCount} />
+                    <StatMini label="Done" value={podcast.stageCounts.completed} />
+                    <StatMini label="Queued" value={podcast.stageCounts.queued} />
+                    <StatMini label="Failed" value={podcast.stageCounts.failed} />
+                  </div>
+                </button>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-2xl">Episode Library</CardTitle>
+            <CardDescription>
+              {selectedPodcast ? `Episodes from ${selectedPodcast.title ?? "selected podcast"}` : "Choose a podcast to view episodes."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingEpisodes ? <p className="text-sm text-muted-foreground">Loading episodes...</p> : null}
+
+            {!loadingEpisodes && episodesData && episodesData.episodes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No episodes have been imported for this podcast yet.</p>
+            ) : null}
+
+            {!loadingEpisodes && episodesData?.episodes.length ? (
+              <div className="space-y-2">
+                {episodesData.episodes.map((episode) => (
+                  <div key={episode.id} className="grid gap-3 rounded-2xl border border-border/80 bg-white p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="truncate text-sm font-semibold md:text-base">{episode.title}</h4>
+                        <Badge variant={episode.isTranscribed ? "secondary" : "outline"}>
+                          {episode.isTranscribed ? "Transcribed" : "Pending transcription"}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {episode.publishedAt ? new Date(episode.publishedAt).toLocaleDateString() : "Unknown publish date"}
+                        {episode.durationSec ? ` • ${Math.round(episode.durationSec / 60)} min` : ""}
+                        {episode.segmentCount > 0 ? ` • ${episode.segmentCount} transcript chunks` : ""}
+                      </p>
+                      {episode.errorMessage ? <p className="mt-1 text-xs text-destructive">{episode.errorMessage}</p> : null}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {episode.episodeUrl ? (
+                        <Button asChild variant="outline" size="sm">
+                          <a href={episode.episodeUrl} target="_blank" rel="noreferrer">
+                            Open Episode
+                          </a>
+                        </Button>
+                      ) : null}
+                      {episode.isTranscribed ? (
+                        <Button asChild size="sm">
+                          <a href={`/api/podcasts/${episodesData.podcast.id}/episodes/${episode.id}/transcript/download`}>
+                            Download Transcript
+                          </a>
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="space-y-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xl">Actions</CardTitle>
+            <CardDescription>Manage ingestion and transcript exports for the selected podcast.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Resync Episode Count</p>
+              <Input
+                type="number"
+                min={1}
+                value={requestedEpisodes}
+                onChange={(event) => setRequestedEpisodes(Number(event.target.value))}
+              />
+            </div>
+
+            <Button className="w-full" onClick={runResync} disabled={!selectedPodcastId || runningAction !== null}>
+              {runningAction === "resync" ? "Starting Resync..." : "Resync Feed"}
             </Button>
-            <Button type="button" variant="outline" disabled={!canRetryDispatch || retrying} onClick={retryQueueDispatch}>
-              {retrying ? "Retrying..." : "Retry Queue Dispatch"}
+
+            <Button variant="outline" className="w-full" onClick={runRetryDispatch} disabled={!selectedPodcastId || runningAction !== null}>
+              {runningAction === "retry" ? "Retrying..." : "Retry Queue Dispatch"}
             </Button>
-            <Button asChild type="button" variant="outline">
+
+            <Button variant="secondary" asChild className="w-full">
               <a
-                href={data?.podcast?.id ? `/api/podcasts/${data.podcast.id}/transcripts/download` : "#"}
+                href={selectedPodcastId ? `/api/podcasts/${selectedPodcastId}/transcripts/download` : "#"}
                 onClick={(event) => {
-                  if (!data?.podcast?.id) {
+                  if (!selectedPodcastId) {
                     event.preventDefault();
                   }
                 }}
               >
-                Download Transcripts (.txt)
+                Download Full Podcast Transcript
               </a>
             </Button>
-          </div>
-        </form>
 
-        {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
-        {retryMessage ? <p className="text-sm font-medium text-emerald-700">{retryMessage}</p> : null}
+            <Button variant="outline" asChild className="w-full">
+              <a href="/onboarding">Add or Change RSS Feed</a>
+            </Button>
+          </CardContent>
+        </Card>
 
-        {data ? (
-          <div className="space-y-4">
-            <Card className="border-border/70">
-              <CardContent className="space-y-1 p-4">
-                <h3 className="text-xl font-semibold">{data.podcast.title ?? "Untitled Podcast"}</h3>
-                <p className="text-sm text-muted-foreground">{data.podcast.feedUrl}</p>
-                <p className="text-sm">Status: <span className="font-semibold">{data.podcast.status}</span></p>
-                <p className="text-sm">Last sync: <span className="font-semibold">{data.podcast.lastSyncedAt ?? "never"}</span></p>
-              </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-              <Kpi title="Queued" value={data.stageCounts.queued} />
-              <Kpi title="Processing" value={data.stageCounts.processing} />
-              <Kpi title="Completed" value={data.stageCounts.completed} />
-              <Kpi title="Failed" value={data.stageCounts.failed} />
-            </div>
-
-            {data.latestJob ? (
-              <Card className="border-border/70">
-                <CardContent className="space-y-1 p-4 text-sm">
-                  <p>Latest Job: <span className="font-semibold">{data.latestJob.id.slice(0, 8)}</span></p>
-                  <p>Status: <span className="font-semibold">{data.latestJob.status}</span></p>
-                  <p>
-                    Processed: <span className="font-semibold">{data.latestJob.processedItems}/{data.latestJob.totalItems}</span>
-                  </p>
-                  <p>Failed: <span className="font-semibold">{data.latestJob.failedItems}</span></p>
-                  <p>
-                    Queue Dispatch: <span className="font-semibold">{data.latestJob.queueDispatchStatus ?? "unknown"}</span>
-                    {typeof data.latestJob.queueDispatchAttempts === "number"
-                      ? ` (attempts ${data.latestJob.queueDispatchAttempts})`
-                      : ""}
-                  </p>
-                  {data.latestJob.queueDispatchError ? (
-                    <p className="font-medium text-destructive">Dispatch error: {data.latestJob.queueDispatchError}</p>
-                  ) : null}
-                  {data.latestJob.errorSummary ? <p className="font-medium text-destructive">{data.latestJob.errorSummary}</p> : null}
-                </CardContent>
-              </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xl">Current Progress</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <ProgressItem label="Queued" value={episodesData?.stageCounts.queued ?? 0} />
+            <ProgressItem label="Processing" value={episodesData?.stageCounts.processing ?? 0} />
+            <ProgressItem label="Completed" value={episodesData?.stageCounts.completed ?? 0} />
+            <ProgressItem label="Failed" value={episodesData?.stageCounts.failed ?? 0} />
+            {episodesData?.latestJob?.queueDispatchError ? (
+              <p className="rounded-xl border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+                Queue dispatch error: {episodesData.latestJob.queueDispatchError}
+              </p>
             ) : null}
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
+
+        {message ? <p className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p> : null}
+        {error ? <p className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{error}</p> : null}
+      </div>
+    </section>
   );
 }
 
-function Kpi({ title, value }: { title: string; value: number }) {
+function StatMini({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-border/70 bg-secondary/30 p-3">
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{title}</p>
-      <p className="text-2xl font-semibold">{value}</p>
+    <div className="rounded-xl border border-border/70 bg-secondary/30 px-2 py-1">
+      <p>{label}</p>
+      <p className="font-semibold text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function ProgressItem({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-border/70 bg-secondary/25 px-3 py-2">
+      <p>{label}</p>
+      <p className="font-semibold">{value}</p>
     </div>
   );
 }

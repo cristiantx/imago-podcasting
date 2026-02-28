@@ -7,8 +7,8 @@ export default function OnboardingPage() {
     <section className="grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
       <Card>
         <CardHeader>
-          <CardTitle className="text-3xl">Connect Your Feed</CardTitle>
-          <CardDescription>Public RSS only for MVP. Imports respect your plan quota + credits.</CardDescription>
+          <CardTitle className="text-3xl">Connect Your RSS Feed</CardTitle>
+          <CardDescription>Import episodes, transcribe in background, and keep everything searchable and downloadable.</CardDescription>
         </CardHeader>
         <CardContent>
           <RssImportForm />

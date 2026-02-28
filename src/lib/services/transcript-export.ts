@@ -43,12 +43,7 @@ export async function buildPodcastTranscriptTextExport(input: { clerkUserId: str
     orderBy: [transcriptSegments.episodeId, transcriptSegments.chunkIndex]
   });
 
-  const segmentsByEpisode = new Map<string, typeof segmentRows>();
-  for (const row of segmentRows) {
-    const current = segmentsByEpisode.get(row.episodeId) ?? [];
-    current.push(row);
-    segmentsByEpisode.set(row.episodeId, current);
-  }
+  const segmentsByEpisode = groupSegmentsByEpisode(segmentRows);
 
   const orderedEpisodes = [...episodeRows].sort((a, b) => {
     const left = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
@@ -88,6 +83,75 @@ export async function buildPodcastTranscriptTextExport(input: { clerkUserId: str
     filename: toSafeFilename(`${podcast.title ?? "podcast"}-transcripts-${new Date().toISOString().slice(0, 10)}.txt`),
     content: lines.join("\n")
   };
+}
+
+export async function buildEpisodeTranscriptTextExport(input: {
+  clerkUserId: string;
+  podcastId: string;
+  episodeId: string;
+}) {
+  const podcast = await db.query.podcasts.findFirst({
+    where: and(eq(podcasts.id, input.podcastId), eq(podcasts.clerkUserId, input.clerkUserId))
+  });
+
+  if (!podcast) {
+    throw new Error("Podcast not found");
+  }
+
+  const episode = await db.query.episodes.findFirst({
+    where: and(eq(episodes.id, input.episodeId), eq(episodes.podcastId, podcast.id))
+  });
+
+  if (!episode) {
+    throw new Error("Episode not found");
+  }
+
+  const segments = await db.query.transcriptSegments.findMany({
+    where: eq(transcriptSegments.episodeId, episode.id),
+    orderBy: [transcriptSegments.chunkIndex]
+  });
+
+  if (segments.length === 0) {
+    throw new Error("No transcript segments available for this episode");
+  }
+
+  const lines: string[] = [];
+  lines.push(`# ${podcast.title ?? "Untitled Podcast"}`);
+  lines.push(`## ${episode.title}`);
+  lines.push(`Episode URL: ${episode.episodeUrl ?? episode.audioUrl}`);
+  lines.push(`Published: ${episode.publishedAt ? new Date(episode.publishedAt).toISOString() : "unknown"}`);
+  lines.push(`Generated: ${new Date().toISOString()}`);
+  lines.push("");
+
+  for (const segment of segments) {
+    const speaker = segment.speakerLabel ?? "Speaker";
+    lines.push(`[${formatTimestamp(segment.startMs)} - ${formatTimestamp(segment.endMs)}] ${speaker}: ${segment.text}`);
+  }
+
+  return {
+    filename: toSafeFilename(`${episode.title}-transcript-${new Date().toISOString().slice(0, 10)}.txt`),
+    content: lines.join("\n")
+  };
+}
+
+function groupSegmentsByEpisode(
+  segments: Array<{
+    episodeId: string;
+    speakerLabel: string | null;
+    startMs: number;
+    endMs: number;
+    text: string;
+    chunkIndex: number;
+  }>
+) {
+  const byEpisode = new Map<string, typeof segments>();
+  for (const segment of segments) {
+    const current = byEpisode.get(segment.episodeId) ?? [];
+    current.push(segment);
+    byEpisode.set(segment.episodeId, current);
+  }
+
+  return byEpisode;
 }
 
 function formatTimestamp(milliseconds: number) {

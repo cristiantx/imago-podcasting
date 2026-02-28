@@ -4,23 +4,23 @@
 
 @layer base {
   :root {
-    --background: 40 42% 93%;
-    --foreground: 24 30% 10%;
-    --card: 40 43% 97%;
-    --card-foreground: 24 30% 10%;
-    --primary: 15 59% 44%;
-    --primary-foreground: 40 44% 95%;
-    --secondary: 24 36% 90%;
-    --secondary-foreground: 24 30% 10%;
-    --muted: 34 28% 89%;
-    --muted-foreground: 25 14% 38%;
-    --accent: 20 62% 86%;
-    --accent-foreground: 24 30% 10%;
-    --destructive: 0 72% 45%;
+    --background: 225 25% 95%;
+    --foreground: 228 20% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 228 20% 16%;
+    --primary: 248 69% 61%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 226 28% 92%;
+    --secondary-foreground: 228 20% 16%;
+    --muted: 225 24% 91%;
+    --muted-foreground: 225 12% 41%;
+    --accent: 248 80% 92%;
+    --accent-foreground: 248 42% 29%;
+    --destructive: 0 72% 48%;
     --destructive-foreground: 0 0% 100%;
-    --border: 31 24% 77%;
-    --input: 31 24% 77%;
-    --ring: 15 59% 44%;
+    --border: 226 19% 86%;
+    --input: 226 19% 86%;
+    --ring: 248 69% 61%;
     --radius: 1rem;
   }
 
@@ -35,25 +35,29 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: "Avenir Next", "Gill Sans Nova", "Segoe UI", "Trebuchet MS", sans-serif;
+    font-family: "Plus Jakarta Sans", "Avenir Next", "Segoe UI", sans-serif;
     background-image:
-      radial-gradient(circle at 18% 14%, hsla(39, 82%, 96%, 1) 0, hsla(40, 42%, 93%, 1) 45%),
-      radial-gradient(circle at 82% 0%, hsla(27, 90%, 90%, 0.8) 0, transparent 30%),
-      repeating-linear-gradient(45deg, hsla(17, 60%, 44%, 0.04) 0, hsla(17, 60%, 44%, 0.04) 2px, transparent 2px, transparent 10px);
+      radial-gradient(circle at 10% 0%, hsla(248, 58%, 84%, 0.45), transparent 30%),
+      radial-gradient(circle at 90% 18%, hsla(250, 50%, 90%, 0.45), transparent 34%),
+      linear-gradient(180deg, hsla(222, 22%, 76%, 1) 0%, hsla(225, 24%, 86%, 1) 100%);
   }
 
   h1,
   h2,
   h3,
   h4 {
-    font-family: "Iowan Old Style", "Baskerville", "Palatino Linotype", "Book Antiqua", Palatino, serif;
-    letter-spacing: 0.01em;
+    font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+    letter-spacing: -0.02em;
   }
 }
 
 @layer components {
   .page-transition {
-    animation: fade-slide-in 450ms ease;
+    animation: fade-slide-in 320ms ease;
+  }
+
+  .glass-panel {
+    @apply rounded-3xl border border-white/50 bg-white/70 shadow-[0_24px_70px_rgba(80,88,120,0.18)] backdrop-blur-xl;
   }
 }
 
