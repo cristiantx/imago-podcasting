@@ -12,6 +12,8 @@ type ImportResponse = {
   jobId: string;
   allowedEpisodes: number;
   remainingAfterReservation: number;
+  queueDispatchStatus: "not_required" | "sent" | "failed";
+  queueDispatchError: string | null;
 };
 
 export function RssImportForm() {
@@ -74,12 +76,20 @@ export function RssImportForm() {
       {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
 
       {result ? (
-        <Card className="border-primary/20 bg-primary/5">
+        <Card className={result.queueDispatchStatus === "failed" ? "border-destructive/40 bg-destructive/5" : "border-primary/20 bg-primary/5"}>
           <CardContent className="space-y-1 p-4">
             <p className="text-sm font-semibold">Import queued.</p>
             <p className="text-sm text-muted-foreground">
               Job {result.jobId.slice(0, 8)} started for podcast {result.podcastId.slice(0, 8)}. Allowed episodes: {result.allowedEpisodes}. Remaining after reservation: {result.remainingAfterReservation}.
             </p>
+            <p className="text-sm">
+              Queue dispatch status: <span className="font-semibold">{result.queueDispatchStatus}</span>
+            </p>
+            {result.queueDispatchStatus === "failed" ? (
+              <p className="text-sm font-medium text-destructive">
+                Dispatch failed: {result.queueDispatchError ?? "unknown error"}. Use Dashboard → Retry Queue Dispatch.
+              </p>
+            ) : null}
           </CardContent>
         </Card>
       ) : null}

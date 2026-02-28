@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { inngest } from "@/inngest/client";
 import { db } from "@/lib/db/client";
@@ -12,11 +12,15 @@ type ImportRequest = {
   requestedEpisodes?: number;
 };
 
+type QueueDispatchStatus = "not_required" | "sent" | "failed";
+
 type ImportResult = {
   podcastId: string;
   jobId: string;
   allowedEpisodes: number;
   remainingAfterReservation: number;
+  queueDispatchStatus: QueueDispatchStatus;
+  queueDispatchError: string | null;
 };
 
 export async function startImportFromFeed(input: ImportRequest): Promise<ImportResult> {
@@ -37,7 +41,6 @@ export async function startImportFromFeed(input: ImportRequest): Promise<ImportR
   });
 
   const existingGuids = new Set(existingEpisodes.map((item) => item.rssGuid));
-
   const newCandidates = parsedFeed.episodes.filter((item) => !existingGuids.has(item.guid));
 
   const reservationKey = crypto.randomUUID();
@@ -60,6 +63,10 @@ export async function startImportFromFeed(input: ImportRequest): Promise<ImportR
       totalItems: selected.length,
       processedItems: 0,
       failedItems: 0,
+      queueDispatchStatus: selected.length === 0 ? "not_required" : "pending",
+      queueDispatchAttempts: 0,
+      queueDispatchError: null,
+      queuedEpisodeIds: [],
       startedAt: new Date(),
       finishedAt: selected.length === 0 ? new Date() : null
     })
@@ -71,7 +78,9 @@ export async function startImportFromFeed(input: ImportRequest): Promise<ImportR
       podcastId: podcast.id,
       jobId: job.id,
       allowedEpisodes: 0,
-      remainingAfterReservation: reservation.remainingAfterReservation
+      remainingAfterReservation: reservation.remainingAfterReservation,
+      queueDispatchStatus: "not_required",
+      queueDispatchError: null
     };
   }
 
@@ -94,9 +103,10 @@ export async function startImportFromFeed(input: ImportRequest): Promise<ImportR
     .returning({ id: episodes.id, usageLedgerId: episodes.usageLedgerId });
 
   const consumedUnitSet = new Set(inserted.map((item) => item.usageLedgerId).filter((id): id is string => Boolean(id)));
-
   const unusedUnits = reservation.reservedUnits.filter((unit) => !consumedUnitSet.has(unit.id)).map((unit) => unit.id);
   await releaseUnusedUnits(unusedUnits);
+
+  const insertedEpisodeIds = inserted.map((item) => item.id);
 
   await db
     .update(ingestJobs)
@@ -104,11 +114,39 @@ export async function startImportFromFeed(input: ImportRequest): Promise<ImportR
       totalItems: inserted.length,
       status: inserted.length === 0 ? "completed" : "queued",
       finishedAt: inserted.length === 0 ? new Date() : null,
+      queueDispatchStatus: inserted.length === 0 ? "not_required" : "pending",
+      queueDispatchError: null,
+      queuedEpisodeIds: insertedEpisodeIds,
       updatedAt: new Date()
     })
     .where(eq(ingestJobs.id, job.id));
 
-  if (inserted.length > 0) {
+  if (inserted.length === 0) {
+    return {
+      podcastId: podcast.id,
+      jobId: job.id,
+      allowedEpisodes: 0,
+      remainingAfterReservation: reservation.remainingAfterReservation,
+      queueDispatchStatus: "not_required",
+      queueDispatchError: null
+    };
+  }
+
+  await db
+    .update(podcasts)
+    .set({
+      status: "queued",
+      updatedAt: new Date()
+    })
+    .where(eq(podcasts.id, podcast.id));
+
+  const dispatch = await dispatchImportJob({
+    podcastId: podcast.id,
+    jobId: job.id,
+    episodeIds: insertedEpisodeIds
+  });
+
+  if (dispatch.queueDispatchStatus === "sent") {
     await db
       .update(podcasts)
       .set({
@@ -116,15 +154,14 @@ export async function startImportFromFeed(input: ImportRequest): Promise<ImportR
         updatedAt: new Date()
       })
       .where(eq(podcasts.id, podcast.id));
-
-    await inngest.send({
-      name: "podcast/import.requested",
-      data: {
-        podcastId: podcast.id,
-        jobId: job.id,
-        episodeIds: inserted.map((item) => item.id)
-      }
-    });
+  } else {
+    await db
+      .update(podcasts)
+      .set({
+        status: "dispatch_failed",
+        updatedAt: new Date()
+      })
+      .where(eq(podcasts.id, podcast.id));
   }
 
   const allowedEpisodes = inserted.length;
@@ -134,7 +171,9 @@ export async function startImportFromFeed(input: ImportRequest): Promise<ImportR
     podcastId: podcast.id,
     jobId: job.id,
     allowedEpisodes,
-    remainingAfterReservation
+    remainingAfterReservation,
+    queueDispatchStatus: dispatch.queueDispatchStatus,
+    queueDispatchError: dispatch.queueDispatchError
   };
 }
 
@@ -156,6 +195,116 @@ export async function startResyncForPodcast(input: {
     rssUrl: podcast.feedUrl,
     requestedEpisodes: input.requestedEpisodes
   });
+}
+
+export async function retryQueueDispatchForPodcast(input: { clerkUserId: string; podcastId: string }) {
+  const podcast = await db.query.podcasts.findFirst({
+    where: and(eq(podcasts.id, input.podcastId), eq(podcasts.clerkUserId, input.clerkUserId))
+  });
+
+  if (!podcast) {
+    throw new Error("Podcast not found");
+  }
+
+  const job = await db.query.ingestJobs.findFirst({
+    where: and(eq(ingestJobs.podcastId, podcast.id), inArray(ingestJobs.queueDispatchStatus, ["pending", "failed"])),
+    orderBy: [desc(ingestJobs.startedAt)]
+  });
+
+  if (!job) {
+    throw new Error("No queued job needs dispatch retry");
+  }
+
+  const episodeIds = (job.queuedEpisodeIds ?? []).filter((id): id is string => typeof id === "string" && id.length > 0);
+
+  if (episodeIds.length === 0) {
+    throw new Error("No queued episodes found for this job");
+  }
+
+  const queuedEpisodeRows = await db.query.episodes.findMany({
+    columns: { id: true },
+    where: and(eq(episodes.podcastId, podcast.id), inArray(episodes.id, episodeIds), eq(episodes.status, "queued"))
+  });
+
+  const queuedEpisodeIds = queuedEpisodeRows.map((row) => row.id);
+
+  if (queuedEpisodeIds.length === 0) {
+    return {
+      jobId: job.id,
+      queueDispatchStatus: "not_required" as const,
+      queueDispatchError: null,
+      queuedEpisodes: 0,
+      message: "No queued episodes require dispatch"
+    };
+  }
+
+  const dispatch = await dispatchImportJob({
+    podcastId: podcast.id,
+    jobId: job.id,
+    episodeIds: queuedEpisodeIds
+  });
+
+  if (dispatch.queueDispatchStatus === "sent") {
+    await db
+      .update(podcasts)
+      .set({
+        status: "processing",
+        updatedAt: new Date()
+      })
+      .where(eq(podcasts.id, podcast.id));
+  }
+
+  return {
+    jobId: job.id,
+    queueDispatchStatus: dispatch.queueDispatchStatus,
+    queueDispatchError: dispatch.queueDispatchError,
+    queuedEpisodes: queuedEpisodeIds.length,
+    message: dispatch.queueDispatchStatus === "sent" ? "Dispatch retry succeeded" : "Dispatch retry failed"
+  };
+}
+
+async function dispatchImportJob(input: { podcastId: string; jobId: string; episodeIds: string[] }) {
+  const currentJob = await db.query.ingestJobs.findFirst({ where: eq(ingestJobs.id, input.jobId) });
+  const nextAttempt = (currentJob?.queueDispatchAttempts ?? 0) + 1;
+
+  try {
+    await inngest.send({
+      name: "podcast/import.requested",
+      data: {
+        podcastId: input.podcastId,
+        jobId: input.jobId,
+        episodeIds: input.episodeIds
+      }
+    });
+
+    await db
+      .update(ingestJobs)
+      .set({
+        queueDispatchStatus: "sent",
+        queueDispatchAttempts: nextAttempt,
+        queueDispatchError: null,
+        status: "queued",
+        updatedAt: new Date()
+      })
+      .where(eq(ingestJobs.id, input.jobId));
+
+    return { queueDispatchStatus: "sent" as const, queueDispatchError: null };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to dispatch job to queue";
+
+    await db
+      .update(ingestJobs)
+      .set({
+        queueDispatchStatus: "failed",
+        queueDispatchAttempts: nextAttempt,
+        queueDispatchError: message,
+        status: "dispatch_failed",
+        updatedAt: new Date()
+      })
+      .where(eq(ingestJobs.id, input.jobId));
+
+    return { queueDispatchStatus: "failed" as const, queueDispatchError: message };
+  }
 }
 
 async function upsertPodcast(input: {

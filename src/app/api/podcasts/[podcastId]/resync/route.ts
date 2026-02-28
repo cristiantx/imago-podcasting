@@ -22,7 +22,13 @@ export async function POST(request: Request, context: { params: Promise<{ podcas
       requestedEpisodes: body.requestedEpisodes
     });
 
-    return ok({ jobId: result.jobId, allowedEpisodes: result.allowedEpisodes, remainingAfterReservation: result.remainingAfterReservation });
+    return ok({
+      jobId: result.jobId,
+      allowedEpisodes: result.allowedEpisodes,
+      remainingAfterReservation: result.remainingAfterReservation,
+      queueDispatchStatus: result.queueDispatchStatus,
+      queueDispatchError: result.queueDispatchError
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to resync podcast";
     return fail(message, message === "Unauthorized" ? 401 : 400);

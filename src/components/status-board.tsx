@@ -22,6 +22,9 @@ type StatusPayload = {
     processedItems: number;
     failedItems: number;
     errorSummary: string | null;
+    queueDispatchStatus?: string;
+    queueDispatchAttempts?: number;
+    queueDispatchError?: string | null;
   } | null;
   stageCounts: {
     queued: number;
@@ -31,11 +34,20 @@ type StatusPayload = {
   };
 };
 
+type RetryPayload = {
+  message: string;
+  queueDispatchStatus: string;
+  queueDispatchError: string | null;
+  queuedEpisodes: number;
+};
+
 export function StatusBoard() {
   const [podcastId, setPodcastId] = useState("");
   const [data, setData] = useState<StatusPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [retryMessage, setRetryMessage] = useState<string | null>(null);
 
   async function fetchStatus(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -58,6 +70,49 @@ export function StatusBoard() {
     }
   }
 
+  async function retryQueueDispatch() {
+    if (!podcastId) {
+      return;
+    }
+
+    setRetrying(true);
+    setRetryMessage(null);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/podcasts/${podcastId}/retry-queue`, {
+        method: "POST"
+      });
+      const payload = (await res.json()) as RetryPayload | { error: string };
+
+      if (!res.ok) {
+        throw new Error("error" in payload ? payload.error : "Retry failed");
+      }
+
+      const retry = payload as RetryPayload;
+      setRetryMessage(
+        retry.queueDispatchStatus === "sent"
+          ? `Queue retry succeeded for ${retry.queuedEpisodes} queued episode(s).`
+          : retry.message
+      );
+
+      const statusRes = await fetch(`/api/podcasts/${podcastId}/status`);
+      if (statusRes.ok) {
+        const statusPayload = (await statusRes.json()) as StatusPayload;
+        setData(statusPayload);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Retry failed");
+    } finally {
+      setRetrying(false);
+    }
+  }
+
+  const canRetryDispatch =
+    data?.latestJob &&
+    (data.latestJob.queueDispatchStatus === "failed" || data.latestJob.queueDispatchStatus === "pending") &&
+    data.stageCounts.processing === 0;
+
   return (
     <Card>
       <CardContent className="space-y-5 p-6">
@@ -66,12 +121,18 @@ export function StatusBoard() {
             <Label htmlFor="status-podcast-id">Podcast ID</Label>
             <Input id="status-podcast-id" value={podcastId} onChange={(event) => setPodcastId(event.target.value)} placeholder="UUID" required />
           </div>
-          <Button type="submit" variant="secondary" disabled={loading}>
-            {loading ? "Loading..." : "Load Status"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" variant="secondary" disabled={loading}>
+              {loading ? "Loading..." : "Load Status"}
+            </Button>
+            <Button type="button" variant="outline" disabled={!canRetryDispatch || retrying} onClick={retryQueueDispatch}>
+              {retrying ? "Retrying..." : "Retry Queue Dispatch"}
+            </Button>
+          </div>
         </form>
 
         {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+        {retryMessage ? <p className="text-sm font-medium text-emerald-700">{retryMessage}</p> : null}
 
         {data ? (
           <div className="space-y-4">
@@ -100,6 +161,15 @@ export function StatusBoard() {
                     Processed: <span className="font-semibold">{data.latestJob.processedItems}/{data.latestJob.totalItems}</span>
                   </p>
                   <p>Failed: <span className="font-semibold">{data.latestJob.failedItems}</span></p>
+                  <p>
+                    Queue Dispatch: <span className="font-semibold">{data.latestJob.queueDispatchStatus ?? "unknown"}</span>
+                    {typeof data.latestJob.queueDispatchAttempts === "number"
+                      ? ` (attempts ${data.latestJob.queueDispatchAttempts})`
+                      : ""}
+                  </p>
+                  {data.latestJob.queueDispatchError ? (
+                    <p className="font-medium text-destructive">Dispatch error: {data.latestJob.queueDispatchError}</p>
+                  ) : null}
                   {data.latestJob.errorSummary ? <p className="font-medium text-destructive">{data.latestJob.errorSummary}</p> : null}
                 </CardContent>
               </Card>
