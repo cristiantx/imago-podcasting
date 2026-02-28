@@ -24,48 +24,47 @@ Core backend building blocks:
 
 ```mermaid
 flowchart LR
-    U["User in Web App"] --> I["POST /api/podcasts/import"]
-    I --> A["Auth: requireUser (Clerk)"]
-    A --> R["startImportFromFeed()"]
-
+    U["User"] --> I["POST /api/podcasts/import"]
+    I --> A["Require user auth"]
+    A --> R["Start import service"]
     R --> F["Parse RSS feed"]
-    R --> E["Reserve entitlements\n(usage_ledger)"]
-    R --> P["Upsert podcast + insert queued episodes"]
-    P --> J["Create/update ingest_jobs row"]
-    J --> D{"Dispatch Inngest event?"}
+    R --> E["Reserve entitlement units"]
+    R --> P["Upsert podcast and insert queued episodes"]
+    P --> J["Create or update ingest job"]
+    J --> D{"Dispatch Inngest event"}
 
-    D -->|Yes| EV["Send event: podcast/import.requested"]
-    D -->|No (failed)| DF["Set ingest_jobs.queue_dispatch_status=failed\nSet podcast.status=dispatch_failed"]
-    DF --> RT["POST /api/podcasts/:id/retry-queue"]
+    D -->|yes| EV["Send podcast import requested event"]
+    D -->|no| DF["Mark dispatch failed on job and podcast"]
+    DF --> RT["POST retry queue route"]
     RT --> EV
 
-    EV --> W["Inngest function: importRequested"]
-    W --> L["Load job + mark job processing"]
-    L --> LOOP["For each episodeId"]
+    EV --> W["Inngest import function"]
+    W --> L["Load job and mark processing"]
+    L --> LOOP["Loop over episode IDs"]
+    LOOP --> EP["Process one episode pipeline"]
 
-    LOOP --> EP["processEpisodePipeline(episodeId)"]
-    EP --> B["Download audio to Blob"]
-    B --> T["Deepgram transcription"]
+    EP --> B["Download source audio and upload to Blob"]
+    B --> T["Transcribe in Deepgram"]
     T --> C["Chunk transcript text"]
-    C --> M["Create embeddings (AI Gateway)"]
-    M --> V["Upsert vectors to Pinecone\nnamespace=user_{clerkUserId}"]
-    V --> S["Write transcript_segments in Postgres"]
-    S --> OK["Mark episode completed\nmarkUnitConsumed()"]
+    C --> M["Generate embeddings"]
+    M --> V["Upsert vectors to Pinecone user namespace"]
+    V --> S["Write transcript segments in Postgres"]
+    S --> OK["Mark episode completed and consume unit"]
 
-    EP --> ERR["On failure: mark episode failed\nreleaseReservedUnit()"]
+    EP --> ERR["On error mark episode failed and release unit"]
     OK --> CLEAN["Delete temporary Blob audio"]
     ERR --> CLEAN
-    CLEAN --> PROG["Update ingest_jobs processed/failed counters"]
+    CLEAN --> PROG["Update ingest job progress counters"]
     PROG --> LOOP
 
-    LOOP --> DONE["Finalize ingest job\ncompleted or completed_with_errors"]
-    DONE --> PST["Set podcast status\nready or ready_with_errors"]
+    LOOP --> DONE["Finalize ingest job status"]
+    DONE --> PST["Finalize podcast status"]
 
     U --> Q["POST /api/search"]
-    Q --> QE["Embed query text"]
-    QE --> PQ["Pinecone query (filter by podcastId)"]
-    PQ --> DD["Deduplicate nearby chunk matches"]
-    DD --> SR["Return timestamped episode links\n+ write search_logs"]
+    Q --> QE["Embed search query"]
+    QE --> PQ["Query Pinecone by podcast filter"]
+    PQ --> DD["Dedupe nearby chunk matches"]
+    DD --> SR["Return timestamped results and log search"]
 ```
 
 ## 3) Ingestion and event lifecycle
