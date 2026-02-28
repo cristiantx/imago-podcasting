@@ -128,6 +128,18 @@ export function StatusBoard() {
             <Button type="button" variant="outline" disabled={!canRetryDispatch || retrying} onClick={retryQueueDispatch}>
               {retrying ? "Retrying..." : "Retry Queue Dispatch"}
             </Button>
+            <Button asChild type="button" variant="outline">
+              <a
+                href={data?.podcast?.id ? `/api/podcasts/${data.podcast.id}/transcripts/download` : "#"}
+                onClick={(event) => {
+                  if (!data?.podcast?.id) {
+                    event.preventDefault();
+                  }
+                }}
+              >
+                Download Transcripts (.txt)
+              </a>
+            </Button>
           </div>
         </form>
 
