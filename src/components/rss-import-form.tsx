@@ -2,6 +2,11 @@
 
 import { FormEvent, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 type ImportResponse = {
   podcastId: string;
   jobId: string;
@@ -42,38 +47,41 @@ export function RssImportForm() {
   }
 
   return (
-    <form className="stack" onSubmit={onSubmit}>
-      <label>
-        <div style={{ fontWeight: 600, marginBottom: 6 }}>RSS Feed URL</div>
-        <input value={rssUrl} onChange={(event) => setRssUrl(event.target.value)} placeholder="https://example.com/feed.xml" required />
-      </label>
+    <form className="space-y-4" onSubmit={onSubmit}>
+      <div className="space-y-2">
+        <Label htmlFor="rss-url">RSS Feed URL</Label>
+        <Input id="rss-url" value={rssUrl} onChange={(event) => setRssUrl(event.target.value)} placeholder="https://example.com/feed.xml" required />
+      </div>
 
-      <label>
-        <div style={{ fontWeight: 600, marginBottom: 6 }}>Requested Episodes</div>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="requested-episodes">Requested Episodes</Label>
+        <Input
+          id="requested-episodes"
           type="number"
           min={1}
           value={requestedEpisodes}
           onChange={(event) => setRequestedEpisodes(Number(event.target.value))}
           required
         />
-      </label>
-
-      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <button className="primary" type="submit" disabled={submitting}>
-          {submitting ? "Starting import..." : "Import Feed"}
-        </button>
       </div>
 
-      {error ? <p className="status-error">{error}</p> : null}
+      <div className="flex items-center gap-3">
+        <Button type="submit" disabled={submitting}>
+          {submitting ? "Starting import..." : "Import Feed"}
+        </Button>
+      </div>
+
+      {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
 
       {result ? (
-        <article className="panel" style={{ padding: 14 }}>
-          <strong>Import queued.</strong>
-          <p className="muted" style={{ marginBottom: 0 }}>
-            Job {result.jobId.slice(0, 8)} started for podcast {result.podcastId.slice(0, 8)}. Allowed episodes: {result.allowedEpisodes}. Remaining after reservation: {result.remainingAfterReservation}.
-          </p>
-        </article>
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="space-y-1 p-4">
+            <p className="text-sm font-semibold">Import queued.</p>
+            <p className="text-sm text-muted-foreground">
+              Job {result.jobId.slice(0, 8)} started for podcast {result.podcastId.slice(0, 8)}. Allowed episodes: {result.allowedEpisodes}. Remaining after reservation: {result.remainingAfterReservation}.
+            </p>
+          </CardContent>
+        </Card>
       ) : null}
     </form>
   );

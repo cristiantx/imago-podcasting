@@ -2,6 +2,11 @@
 
 import { FormEvent, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 type StatusPayload = {
   podcast: {
     id: string;
@@ -54,44 +59,63 @@ export function StatusBoard() {
   }
 
   return (
-    <section className="panel" style={{ padding: 20 }}>
-      <form className="stack" onSubmit={fetchStatus}>
-        <label>
-          <div style={{ fontWeight: 600, marginBottom: 6 }}>Podcast ID</div>
-          <input value={podcastId} onChange={(event) => setPodcastId(event.target.value)} placeholder="UUID" required />
-        </label>
-        <button type="submit" className="secondary" disabled={loading}>
-          {loading ? "Loading..." : "Load Status"}
-        </button>
-      </form>
-
-      {error ? <p className="status-error">{error}</p> : null}
-
-      {data ? (
-        <div className="stack" style={{ marginTop: 16 }}>
-          <article className="result-card">
-            <h3 className="heading" style={{ marginTop: 0 }}>{data.podcast.title ?? "Untitled Podcast"}</h3>
-            <p className="muted" style={{ marginBottom: 4 }}>{data.podcast.feedUrl}</p>
-            <div>Status: <strong>{data.podcast.status}</strong></div>
-            <div>Last sync: <strong>{data.podcast.lastSyncedAt ?? "never"}</strong></div>
-          </article>
-          <div className="kpi-grid">
-            <div className="kpi"><div className="muted">Queued</div><strong>{data.stageCounts.queued}</strong></div>
-            <div className="kpi"><div className="muted">Processing</div><strong>{data.stageCounts.processing}</strong></div>
-            <div className="kpi"><div className="muted">Completed</div><strong>{data.stageCounts.completed}</strong></div>
-            <div className="kpi"><div className="muted">Failed</div><strong>{data.stageCounts.failed}</strong></div>
+    <Card>
+      <CardContent className="space-y-5 p-6">
+        <form className="space-y-3" onSubmit={fetchStatus}>
+          <div className="space-y-2">
+            <Label htmlFor="status-podcast-id">Podcast ID</Label>
+            <Input id="status-podcast-id" value={podcastId} onChange={(event) => setPodcastId(event.target.value)} placeholder="UUID" required />
           </div>
-          {data.latestJob ? (
-            <article className="result-card">
-              <div>Latest Job: <strong>{data.latestJob.id.slice(0, 8)}</strong></div>
-              <div>Status: <strong>{data.latestJob.status}</strong></div>
-              <div>Processed: <strong>{data.latestJob.processedItems}/{data.latestJob.totalItems}</strong></div>
-              <div>Failed: <strong>{data.latestJob.failedItems}</strong></div>
-              {data.latestJob.errorSummary ? <p className="status-error">{data.latestJob.errorSummary}</p> : null}
-            </article>
-          ) : null}
-        </div>
-      ) : null}
-    </section>
+          <Button type="submit" variant="secondary" disabled={loading}>
+            {loading ? "Loading..." : "Load Status"}
+          </Button>
+        </form>
+
+        {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+
+        {data ? (
+          <div className="space-y-4">
+            <Card className="border-border/70">
+              <CardContent className="space-y-1 p-4">
+                <h3 className="text-xl font-semibold">{data.podcast.title ?? "Untitled Podcast"}</h3>
+                <p className="text-sm text-muted-foreground">{data.podcast.feedUrl}</p>
+                <p className="text-sm">Status: <span className="font-semibold">{data.podcast.status}</span></p>
+                <p className="text-sm">Last sync: <span className="font-semibold">{data.podcast.lastSyncedAt ?? "never"}</span></p>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+              <Kpi title="Queued" value={data.stageCounts.queued} />
+              <Kpi title="Processing" value={data.stageCounts.processing} />
+              <Kpi title="Completed" value={data.stageCounts.completed} />
+              <Kpi title="Failed" value={data.stageCounts.failed} />
+            </div>
+
+            {data.latestJob ? (
+              <Card className="border-border/70">
+                <CardContent className="space-y-1 p-4 text-sm">
+                  <p>Latest Job: <span className="font-semibold">{data.latestJob.id.slice(0, 8)}</span></p>
+                  <p>Status: <span className="font-semibold">{data.latestJob.status}</span></p>
+                  <p>
+                    Processed: <span className="font-semibold">{data.latestJob.processedItems}/{data.latestJob.totalItems}</span>
+                  </p>
+                  <p>Failed: <span className="font-semibold">{data.latestJob.failedItems}</span></p>
+                  {data.latestJob.errorSummary ? <p className="font-medium text-destructive">{data.latestJob.errorSummary}</p> : null}
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function Kpi({ title, value }: { title: string; value: number }) {
+  return (
+    <div className="rounded-2xl border border-border/70 bg-secondary/30 p-3">
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{title}</p>
+      <p className="text-2xl font-semibold">{value}</p>
+    </div>
   );
 }

@@ -2,6 +2,10 @@
 
 import { FormEvent, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 export function AdminEntitlementsForm() {
   const [clerkUserId, setClerkUserId] = useState("");
   const [planCode, setPlanCode] = useState("free");
@@ -37,26 +41,30 @@ export function AdminEntitlementsForm() {
   }
 
   return (
-    <form className="stack" onSubmit={onSubmit}>
-      <label>
-        <div style={{ fontWeight: 600, marginBottom: 6 }}>Clerk User ID</div>
-        <input value={clerkUserId} onChange={(event) => setClerkUserId(event.target.value)} required />
-      </label>
-      <label>
-        <div style={{ fontWeight: 600, marginBottom: 6 }}>Plan Code</div>
-        <input value={planCode} onChange={(event) => setPlanCode(event.target.value)} required />
-      </label>
-      <label>
-        <div style={{ fontWeight: 600, marginBottom: 6 }}>Credit Delta</div>
-        <input type="number" value={creditDelta} onChange={(event) => setCreditDelta(Number(event.target.value))} required />
-      </label>
-      <label>
-        <div style={{ fontWeight: 600, marginBottom: 6 }}>Admin API Key</div>
-        <input type="password" value={adminKey} onChange={(event) => setAdminKey(event.target.value)} required />
-      </label>
-      <button className="secondary" type="submit">Apply</button>
-      {message ? <p className="status-ok">{message}</p> : null}
-      {error ? <p className="status-error">{error}</p> : null}
+    <form className="space-y-4" onSubmit={onSubmit}>
+      <div className="space-y-2">
+        <Label htmlFor="clerk-user-id">Clerk User ID</Label>
+        <Input id="clerk-user-id" value={clerkUserId} onChange={(event) => setClerkUserId(event.target.value)} required />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="plan-code">Plan Code</Label>
+        <Input id="plan-code" value={planCode} onChange={(event) => setPlanCode(event.target.value)} required />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="credit-delta">Credit Delta</Label>
+        <Input id="credit-delta" type="number" value={creditDelta} onChange={(event) => setCreditDelta(Number(event.target.value))} required />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="admin-api-key">Admin API Key</Label>
+        <Input id="admin-api-key" type="password" value={adminKey} onChange={(event) => setAdminKey(event.target.value)} required />
+      </div>
+
+      <Button type="submit" variant="secondary">Apply</Button>
+      {message ? <p className="text-sm font-medium text-emerald-700">{message}</p> : null}
+      {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
     </form>
   );
 }

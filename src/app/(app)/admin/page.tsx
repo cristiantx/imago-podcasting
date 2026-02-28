@@ -1,13 +1,16 @@
 import { AdminEntitlementsForm } from "@/components/admin-entitlements-form";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function AdminPage() {
   return (
-    <section className="panel" style={{ padding: 20 }}>
-      <h2 className="heading" style={{ marginTop: 0, fontSize: "2rem" }}>
-        Entitlement Ops
-      </h2>
-      <p className="muted">Weekend internal control panel for plan and credits management.</p>
-      <AdminEntitlementsForm />
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-3xl">Entitlement Ops</CardTitle>
+        <CardDescription>Weekend internal control panel for plan and credits management.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <AdminEntitlementsForm />
+      </CardContent>
+    </Card>
   );
 }

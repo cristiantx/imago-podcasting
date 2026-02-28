@@ -5,6 +5,7 @@ Billing-ready semantic search MVP for podcasters.
 ## Stack
 
 - Next.js App Router + TypeScript
+- Tailwind CSS + shadcn/ui component primitives
 - Clerk authentication
 - Neon Postgres + Drizzle ORM
 - Inngest workflows

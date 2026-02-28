@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 type EntitlementSnapshot = {
   planCode: string;
   planQuota: number;
@@ -30,37 +33,39 @@ export function EntitlementPanel() {
   }, []);
 
   return (
-    <aside className="panel" style={{ padding: 20 }}>
-      <h3 className="heading" style={{ marginTop: 0, fontSize: "1.4rem" }}>
-        Your Allowance
-      </h3>
-      {error ? <p className="status-error">{error}</p> : null}
-      {data ? (
-        <div className="kpi-grid">
-          <div className="kpi">
-            <div className="muted">Plan</div>
-            <strong>{data.planCode}</strong>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-2xl">Your Allowance</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+        {data ? (
+          <div className="grid grid-cols-2 gap-2">
+            <Stat title="Plan" value={data.planCode.toUpperCase()} />
+            <Stat title="Plan Quota" value={String(data.planQuota)} />
+            <Stat title="Extra Credits" value={String(data.extraCredits)} />
+            <Stat title="Consumed" value={String(data.consumedUnits)} />
+            <div className="col-span-2 rounded-2xl border border-border/80 bg-secondary/30 p-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Remaining</p>
+              <div className="mt-1 flex items-center gap-2">
+                <p className="text-2xl font-semibold">{data.remainingUnits}</p>
+                <Badge variant="accent">Episodes</Badge>
+              </div>
+            </div>
           </div>
-          <div className="kpi">
-            <div className="muted">Plan Quota</div>
-            <strong>{data.planQuota}</strong>
-          </div>
-          <div className="kpi">
-            <div className="muted">Extra Credits</div>
-            <strong>{data.extraCredits}</strong>
-          </div>
-          <div className="kpi">
-            <div className="muted">Consumed</div>
-            <strong>{data.consumedUnits}</strong>
-          </div>
-          <div className="kpi">
-            <div className="muted">Remaining</div>
-            <strong>{data.remainingUnits}</strong>
-          </div>
-        </div>
-      ) : (
-        <p className="muted">Loading entitlement snapshot...</p>
-      )}
-    </aside>
+        ) : (
+          <p className="text-sm text-muted-foreground">Loading entitlement snapshot...</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function Stat({ title, value }: { title: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-border/80 bg-card/70 p-3">
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{title}</p>
+      <p className="mt-1 text-lg font-semibold">{value}</p>
+    </div>
   );
 }

@@ -2,6 +2,13 @@
 
 import { FormEvent, useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
 type SearchResult = {
   episodeId: string;
   episodeTitle: string;
@@ -47,39 +54,54 @@ export function SearchPanel() {
   }
 
   return (
-    <section className="panel" style={{ padding: 20 }}>
-      <form className="stack" onSubmit={onSubmit}>
-        <label>
-          <div style={{ fontWeight: 600, marginBottom: 6 }}>Podcast ID</div>
-          <input value={podcastId} onChange={(event) => setPodcastId(event.target.value)} required />
-        </label>
-        <label>
-          <div style={{ fontWeight: 600, marginBottom: 6 }}>Search Query</div>
-          <textarea value={query} onChange={(event) => setQuery(event.target.value)} required rows={3} placeholder="pricing psychology stories" />
-        </label>
-        <button type="submit" className="primary" disabled={loading}>
-          {loading ? "Searching..." : "Run Semantic Search"}
-        </button>
-      </form>
+    <Card>
+      <CardContent className="space-y-5 p-6">
+        <form className="space-y-3" onSubmit={onSubmit}>
+          <div className="space-y-2">
+            <Label htmlFor="search-podcast-id">Podcast ID</Label>
+            <Input id="search-podcast-id" value={podcastId} onChange={(event) => setPodcastId(event.target.value)} required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="search-query">Search Query</Label>
+            <Textarea
+              id="search-query"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              required
+              rows={3}
+              placeholder="pricing psychology stories"
+            />
+          </div>
+          <Button type="submit" disabled={loading}>
+            {loading ? "Searching..." : "Run Semantic Search"}
+          </Button>
+        </form>
 
-      {error ? <p className="status-error">{error}</p> : null}
+        {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
 
-      <div className="stack" style={{ marginTop: 16 }}>
-        {results.length === 0 ? <p className="muted">No results yet. Run a query.</p> : null}
-        {results.map((result) => (
-          <article className="result-card" key={`${result.episodeId}-${result.startSec}`}>
-            <h3 className="heading" style={{ marginTop: 0, marginBottom: 6 }}>{result.episodeTitle}</h3>
-            <div>
-              <span className="timestamp-chip">{formatTime(result.startSec)} - {formatTime(result.endSec)}</span>
-              {result.speaker ? <span className="speaker-chip">{result.speaker}</span> : null}
-              <span className="muted">score {result.score.toFixed(3)}</span>
-            </div>
-            <p>{result.snippet}</p>
-            <a href={result.episodeUrl} target="_blank" rel="noreferrer">Open episode</a>
-          </article>
-        ))}
-      </div>
-    </section>
+        <div className="space-y-3">
+          {results.length === 0 ? <p className="text-sm text-muted-foreground">No results yet. Run a query.</p> : null}
+          {results.map((result) => (
+            <Card key={`${result.episodeId}-${result.startSec}`} className="border-border/70">
+              <CardContent className="space-y-2 p-4">
+                <h3 className="text-xl font-semibold">{result.episodeTitle}</h3>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <Badge variant="accent">
+                    {formatTime(result.startSec)} - {formatTime(result.endSec)}
+                  </Badge>
+                  {result.speaker ? <Badge variant="secondary">{result.speaker}</Badge> : null}
+                  <span className="text-muted-foreground">score {result.score.toFixed(3)}</span>
+                </div>
+                <p className="text-sm text-foreground/90">{result.snippet}</p>
+                <a className="text-sm font-medium text-primary hover:underline" href={result.episodeUrl} target="_blank" rel="noreferrer">
+                  Open episode
+                </a>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

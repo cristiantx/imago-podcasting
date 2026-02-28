@@ -1,14 +1,15 @@
 import { SearchPanel } from "@/components/search-panel";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function SearchPage() {
   return (
-    <section className="stack">
-      <article className="panel" style={{ padding: 20 }}>
-        <h2 className="heading" style={{ marginTop: 0, fontSize: "2rem" }}>
-          Semantic Search
-        </h2>
-        <p className="muted">Find meaning-based mentions with exact timestamps and speaker context.</p>
-      </article>
+    <section className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-3xl">Semantic Search</CardTitle>
+          <CardDescription>Find meaning-based mentions with exact timestamps and speaker context.</CardDescription>
+        </CardHeader>
+      </Card>
       <SearchPanel />
     </section>
   );

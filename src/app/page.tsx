@@ -2,30 +2,35 @@ import { SignedIn, SignedOut } from "@clerk/nextjs";
 import type { Route } from "next";
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 export default function HomePage() {
   return (
-    <section className="panel" style={{ padding: 28 }}>
-      <h2 className="heading" style={{ marginTop: 0, fontSize: "2.4rem", lineHeight: 0.95 }}>
-        Your entire podcast archive, searchable by meaning.
-      </h2>
-      <p className="muted" style={{ maxWidth: 720 }}>
-        Paste one RSS feed and index your full catalog with speaker-aware transcripts, semantic vectors, and timestamped results.
-      </p>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 18 }}>
-        <SignedOut>
-          <Link href={"/sign-up" as Route}>
-            <button className="primary">Start Free</button>
-          </Link>
-        </SignedOut>
-        <SignedIn>
-          <Link href={"/onboarding" as Route}>
-            <button className="primary">Connect RSS Feed</button>
-          </Link>
-        </SignedIn>
-        <Link href={"/search" as Route}>
-          <button className="secondary">View Search Demo</button>
-        </Link>
-      </div>
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-4xl leading-[0.95] md:text-5xl">Your entire podcast archive, searchable by meaning.</CardTitle>
+        <CardDescription className="max-w-3xl text-base">
+          Paste one RSS feed and index your full catalog with speaker-aware transcripts, semantic vectors, and timestamped results.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-3">
+          <SignedOut>
+            <Button asChild>
+              <Link href={"/sign-up" as Route}>Start Free</Link>
+            </Button>
+          </SignedOut>
+          <SignedIn>
+            <Button asChild>
+              <Link href={"/onboarding" as Route}>Connect RSS Feed</Link>
+            </Button>
+          </SignedIn>
+          <Button variant="secondary" asChild>
+            <Link href={"/search" as Route}>View Search Demo</Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
