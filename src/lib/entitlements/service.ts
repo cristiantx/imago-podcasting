@@ -27,7 +27,7 @@ export async function getOrCreateEntitlement(clerkUserId: string) {
 }
 
 async function getOrCreateEntitlementInTx(
-  tx: typeof db,
+  tx: any,
   clerkUserId: string
 ) {
   const defaultPlan = await ensureDefaultPlan();

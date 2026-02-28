@@ -1,9 +1,8 @@
 import { del, put } from "@vercel/blob";
 
-import { getEnv } from "@/lib/config";
+import { requireEnvValue } from "@/lib/config";
 
 export async function downloadAndStoreAudio(input: { podcastId: string; episodeId: string; sourceUrl: string }) {
-  const env = getEnv();
   const response = await fetch(input.sourceUrl);
 
   if (!response.ok) {
@@ -18,7 +17,7 @@ export async function downloadAndStoreAudio(input: { podcastId: string; episodeI
   const stored = await put(key, audioBlob, {
     access: "public",
     addRandomSuffix: true,
-    token: env.BLOB_READ_WRITE_TOKEN,
+    token: requireEnvValue("BLOB_READ_WRITE_TOKEN"),
     contentType
   });
 
@@ -26,6 +25,5 @@ export async function downloadAndStoreAudio(input: { podcastId: string; episodeI
 }
 
 export async function deleteAudioFromBlob(url: string) {
-  const env = getEnv();
-  await del(url, { token: env.BLOB_READ_WRITE_TOKEN });
+  await del(url, { token: requireEnvValue("BLOB_READ_WRITE_TOKEN") });
 }

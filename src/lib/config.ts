@@ -1,20 +1,20 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
-  CLERK_SECRET_KEY: z.string().min(1),
-  DATABASE_URL: z.string().min(1),
-  PINECONE_API_KEY: z.string().min(1),
-  PINECONE_INDEX_NAME: z.string().min(1),
-  OPENAI_API_KEY: z.string().min(1),
-  DEEPGRAM_API_KEY: z.string().min(1),
-  BLOB_READ_WRITE_TOKEN: z.string().min(1),
-  INNGEST_EVENT_KEY: z.string().optional(),
-  INNGEST_SIGNING_KEY: z.string().optional(),
-  INNGEST_SERVE_ORIGIN: z.string().optional(),
-  INNGEST_BASE_URL: z.string().optional(),
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().default(""),
+  CLERK_SECRET_KEY: z.string().default(""),
+  DATABASE_URL: z.string().default(""),
+  PINECONE_API_KEY: z.string().default(""),
+  PINECONE_INDEX_NAME: z.string().default(""),
+  OPENAI_API_KEY: z.string().default(""),
+  DEEPGRAM_API_KEY: z.string().default(""),
+  BLOB_READ_WRITE_TOKEN: z.string().default(""),
+  INNGEST_EVENT_KEY: z.string().optional().default(""),
+  INNGEST_SIGNING_KEY: z.string().optional().default(""),
+  INNGEST_SERVE_ORIGIN: z.string().optional().default(""),
+  INNGEST_BASE_URL: z.string().optional().default(""),
   ABSOLUTE_EPISODE_SAFETY_CAP: z.coerce.number().int().positive().default(500),
-  ADMIN_API_KEY: z.string().min(1)
+  ADMIN_API_KEY: z.string().default("")
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
@@ -33,4 +33,15 @@ export function getEnv(): AppEnv {
 
   cachedEnv = parsed.data;
   return parsed.data;
+}
+
+export function requireEnvValue(name: keyof AppEnv) {
+  const env = getEnv();
+  const value = env[name];
+
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+
+  return value;
 }

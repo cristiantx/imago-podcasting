@@ -62,10 +62,10 @@ export async function processEpisodePipeline(input: { episodeId: string }) {
           episodeId: episode.id,
           episodeTitle: episode.title,
           episodeUrl: episode.episodeUrl ?? episode.audioUrl,
-          publishedAt: episode.publishedAt?.toISOString() ?? null,
+          publishedAt: episode.publishedAt?.toISOString() ?? "",
           startMs: chunk.startMs,
           endMs: chunk.endMs,
-          speaker: chunk.speaker,
+          speaker: chunk.speaker ?? "",
           snippet: chunk.text
         }
       };

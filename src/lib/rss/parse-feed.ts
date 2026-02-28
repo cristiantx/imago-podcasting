@@ -31,12 +31,13 @@ type FeedItem = {
 
 const parser = new Parser<unknown, FeedItem>({
   customFields: {
-    item: ["itunes:duration"]
+    item: [["itunes:duration", "itunesDuration"]]
   }
 });
 
 export async function parseRssFeed(url: string): Promise<ParsedFeed> {
   const feed = await parser.parseURL(url);
+  const feedLanguage = (feed as unknown as { language?: string }).language;
 
   const episodes = (feed.items ?? [])
     .map((item) => {
@@ -71,7 +72,7 @@ export async function parseRssFeed(url: string): Promise<ParsedFeed> {
     title: feed.title ?? null,
     description: feed.description ?? null,
     imageUrl: typeof feed.image === "object" && feed.image && "url" in feed.image ? String(feed.image.url ?? "") || null : null,
-    language: feed.language ?? "en",
+    language: feedLanguage ?? "en",
     episodes
   };
 }

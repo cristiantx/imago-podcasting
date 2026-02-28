@@ -1,4 +1,4 @@
-import { getEnv } from "@/lib/config";
+import { requireEnvValue } from "@/lib/config";
 import type { Utterance } from "@/lib/chunking/transcript-chunker";
 
 type DeepgramResponse = {
@@ -13,15 +13,13 @@ type DeepgramResponse = {
 };
 
 export async function transcribeFromUrl(audioUrl: string): Promise<Utterance[]> {
-  const env = getEnv();
-
   const endpoint =
     "https://api.deepgram.com/v1/listen?model=nova-2&diarize=true&utterances=true&punctuate=true&smart_format=true&language=en";
 
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
-      Authorization: `Token ${env.DEEPGRAM_API_KEY}`,
+      Authorization: `Token ${requireEnvValue("DEEPGRAM_API_KEY")}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({ url: audioUrl })

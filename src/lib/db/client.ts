@@ -1,10 +1,10 @@
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 
-import { getEnv } from "@/lib/config";
+import { requireEnvValue } from "@/lib/config";
 import * as schema from "@/lib/db/schema";
 
-const env = getEnv();
+const databaseUrl = requireEnvValue("DATABASE_URL");
 
 const globalForDb = globalThis as unknown as {
   pgClient?: ReturnType<typeof postgres>;
@@ -12,7 +12,7 @@ const globalForDb = globalThis as unknown as {
 
 const pgClient =
   globalForDb.pgClient ??
-  postgres(env.DATABASE_URL, {
+  postgres(databaseUrl, {
     max: 10,
     idle_timeout: 20,
     connect_timeout: 10

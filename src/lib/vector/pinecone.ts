@@ -1,6 +1,6 @@
 import { Pinecone } from "@pinecone-database/pinecone";
 
-import { getEnv } from "@/lib/config";
+import { getEnv, requireEnvValue } from "@/lib/config";
 
 const globalForPinecone = globalThis as unknown as { pinecone?: Pinecone };
 
@@ -9,7 +9,7 @@ function getClient() {
     return globalForPinecone.pinecone;
   }
 
-  const client = new Pinecone({ apiKey: getEnv().PINECONE_API_KEY });
+  const client = new Pinecone({ apiKey: requireEnvValue("PINECONE_API_KEY") });
   globalForPinecone.pinecone = client;
   return client;
 }

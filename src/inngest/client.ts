@@ -6,5 +6,5 @@ const env = getEnv();
 
 export const inngest = new Inngest({
   id: "imago-podcasting",
-  eventKey: env.INNGEST_EVENT_KEY
+  eventKey: env.INNGEST_EVENT_KEY || undefined
 });

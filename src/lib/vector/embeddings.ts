@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-import { getEnv } from "@/lib/config";
+import { requireEnvValue } from "@/lib/config";
 
 const globalForOpenAi = globalThis as unknown as { openai?: OpenAI };
 
@@ -9,7 +9,7 @@ function getOpenAiClient() {
     return globalForOpenAi.openai;
   }
 
-  const client = new OpenAI({ apiKey: getEnv().OPENAI_API_KEY });
+  const client = new OpenAI({ apiKey: requireEnvValue("OPENAI_API_KEY") });
   globalForOpenAi.openai = client;
   return client;
 }

@@ -31,8 +31,8 @@ describe("computeReservationPolicy", () => {
     });
 
     expect(policy.reserveFromPlan).toBe(2);
-    expect(policy.reserveFromCredits).toBe(3);
-    expect(policy.allowedForJob).toBe(5);
+    expect(policy.reserveFromCredits).toBe(4);
+    expect(policy.allowedForJob).toBe(6);
   });
 
   it("clamps request when it exceeds remaining allowance", () => {

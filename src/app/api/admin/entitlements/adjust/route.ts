@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db/client";
 import { ensurePlanByCode } from "@/lib/db/bootstrap";
 import { accountEntitlements } from "@/lib/db/schema";
-import { getEnv } from "@/lib/config";
+import { requireEnvValue } from "@/lib/config";
 import { fail, ok } from "@/lib/http";
 
 const bodySchema = z.object({
@@ -16,7 +16,7 @@ const bodySchema = z.object({
 export async function POST(request: Request) {
   try {
     const adminKey = request.headers.get("x-admin-key");
-    if (!adminKey || adminKey !== getEnv().ADMIN_API_KEY) {
+    if (!adminKey || adminKey !== requireEnvValue("ADMIN_API_KEY")) {
       return fail("Unauthorized admin request", 401);
     }
 
