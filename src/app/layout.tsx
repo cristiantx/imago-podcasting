@@ -62,10 +62,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                           className="h-10 rounded-full border-white/60 bg-white/75"
                           aria-label="workspace search"
                         />
-                        <div className="hidden items-center gap-2 sm:flex">
-                          <div className="grid h-10 w-10 place-items-center rounded-full border border-white/70 bg-white/70 text-sm">✦</div>
-                          <div className="grid h-10 w-10 place-items-center rounded-full border border-white/70 bg-white/70 text-sm">•</div>
-                        </div>
                         <div className="ml-auto">
                           <UserButton />
                         </div>

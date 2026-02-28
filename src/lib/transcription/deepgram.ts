@@ -12,17 +12,19 @@ type DeepgramResponse = {
   };
 };
 
-export async function transcribeFromUrl(audioUrl: string): Promise<Utterance[]> {
+export async function transcribeFromUrl(
+  audioUrl: string,
+): Promise<Utterance[]> {
   const endpoint =
-    "https://api.deepgram.com/v1/listen?model=nova-2&diarize=true&utterances=true&punctuate=true&smart_format=true&language=en";
+    "https://api.deepgram.com/v1/listen?model=nova-3&diarize=true&utterances=true&punctuate=true&smart_format=true&detect_language=true&utt_split=0.5";
 
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       Authorization: `Token ${requireEnvValue("DEEPGRAM_API_KEY")}`,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify({ url: audioUrl })
+    body: JSON.stringify({ url: audioUrl }),
   });
 
   if (!response.ok) {
@@ -33,10 +35,13 @@ export async function transcribeFromUrl(audioUrl: string): Promise<Utterance[]> 
   const payload = (await response.json()) as DeepgramResponse;
   const utterances = payload.results?.utterances ?? [];
 
+  console.log();
+
   return utterances.map((item) => ({
-    speaker: typeof item.speaker === "number" ? `Speaker ${item.speaker}` : null,
+    speaker:
+      typeof item.speaker === "number" ? `Speaker ${item.speaker}` : null,
     startMs: Math.round(item.start * 1000),
     endMs: Math.round(item.end * 1000),
-    text: item.transcript
+    text: item.transcript,
   }));
 }

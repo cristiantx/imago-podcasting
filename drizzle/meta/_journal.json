@@ -22,6 +22,13 @@
       "when": 1772288959232,
       "tag": "0002_keen_the_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1772292545342,
+      "tag": "0003_damp_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

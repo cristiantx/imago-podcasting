@@ -103,6 +103,7 @@ export const episodes = pgTable(
     audioUrl: text("audio_url").notNull(),
     episodeUrl: text("episode_url"),
     audioBlobUrl: text("audio_blob_url"),
+    transcriptVttBlobUrl: text("transcript_vtt_blob_url"),
     durationSec: integer("duration_sec"),
     status: varchar("status", { length: 32 }).notNull().default("queued"),
     errorMessage: text("error_message"),

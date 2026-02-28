@@ -1,0 +1,1 @@
+ALTER TABLE "episodes" ADD COLUMN "transcript_vtt_blob_url" text;

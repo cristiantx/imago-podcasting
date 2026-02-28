@@ -3,6 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { episodes, ingestJobs, podcasts, searchLogs, transcriptSegments, usageLedger } from "@/lib/db/schema";
 import { deleteAudioFromBlob } from "@/lib/storage/audio";
+import { deleteTranscriptFromBlob } from "@/lib/storage/transcript";
 import { getNamespace } from "@/lib/vector/pinecone";
 
 export async function deletePodcastForUser(input: { clerkUserId: string; podcastId: string }) {
@@ -16,13 +17,16 @@ export async function deletePodcastForUser(input: { clerkUserId: string; podcast
   }
 
   const episodeRows = await db.query.episodes.findMany({
-    columns: { id: true, audioBlobUrl: true },
+    columns: { id: true, audioBlobUrl: true, transcriptVttBlobUrl: true },
     where: eq(episodes.podcastId, podcast.id)
   });
 
   const episodeIds = episodeRows.map((episode) => episode.id);
   const audioBlobUrls = episodeRows
     .map((episode) => episode.audioBlobUrl)
+    .filter((url): url is string => typeof url === "string" && url.length > 0);
+  const transcriptVttBlobUrls = episodeRows
+    .map((episode) => episode.transcriptVttBlobUrl)
     .filter((url): url is string => typeof url === "string" && url.length > 0);
   const segmentRows =
     episodeIds.length > 0
@@ -39,6 +43,16 @@ export async function deletePodcastForUser(input: { clerkUserId: string; podcast
     audioBlobUrls.map(async (url) => {
       try {
         await deleteAudioFromBlob(url);
+      } catch {
+        return undefined;
+      }
+    })
+  );
+
+  await Promise.all(
+    transcriptVttBlobUrls.map(async (url) => {
+      try {
+        await deleteTranscriptFromBlob(url);
       } catch {
         return undefined;
       }
