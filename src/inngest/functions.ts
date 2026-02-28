@@ -1,8 +1,8 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { inngest } from "@/inngest/client";
 import { db } from "@/lib/db/client";
-import { episodes, ingestJobs, podcasts } from "@/lib/db/schema";
+import { ingestJobs, podcasts } from "@/lib/db/schema";
 import { processEpisodePipeline } from "@/lib/pipeline/process-episode";
 
 export const importRequested = inngest.createFunction(
@@ -14,6 +14,18 @@ export const importRequested = inngest.createFunction(
       jobId: string;
       episodeIds: string[];
     };
+
+    const job = await step.run("load-job", async () => {
+      return db.query.ingestJobs.findFirst({ where: eq(ingestJobs.id, payload.jobId) });
+    });
+
+    if (!job) {
+      throw new Error(`Ingest job ${payload.jobId} not found`);
+    }
+
+    if (!["queued", "dispatch_failed"].includes(job.status)) {
+      return { skipped: true, reason: `Job already in status ${job.status}` };
+    }
 
     const total = payload.episodeIds.length;
 
@@ -39,7 +51,7 @@ export const importRequested = inngest.createFunction(
           await processEpisodePipeline({ episodeId });
         });
         processed += 1;
-      } catch (error) {
+      } catch {
         failed += 1;
       }
 
