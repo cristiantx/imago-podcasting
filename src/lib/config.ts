@@ -6,7 +6,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().default(""),
   PINECONE_API_KEY: z.string().default(""),
   PINECONE_INDEX_NAME: z.string().default(""),
-  OPENAI_API_KEY: z.string().default(""),
+  AI_GATEWAY_API_KEY: z.string().default(""),
   DEEPGRAM_API_KEY: z.string().default(""),
   BLOB_READ_WRITE_TOKEN: z.string().default(""),
   INNGEST_EVENT_KEY: z.string().optional().default(""),

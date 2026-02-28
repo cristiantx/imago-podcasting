@@ -10,7 +10,7 @@ Billing-ready semantic search MVP for podcasters.
 - Neon Postgres + Drizzle ORM
 - Inngest workflows
 - Deepgram transcription with diarization
-- OpenAI embeddings
+- Vercel AI Gateway embeddings (`openai/text-embedding-3-small`)
 - Pinecone vector search
 - Vercel Blob temporary audio storage
 
