@@ -62,20 +62,6 @@ export async function processEpisodePipeline(input: { episodeId: string }) {
 
     uploadedTranscriptVttUrl = storedWebVtt.url;
 
-    await db
-      .update(episodes)
-      .set({
-        transcriptVttBlobUrl: storedWebVtt.url,
-        updatedAt: new Date()
-      })
-      .where(eq(episodes.id, episode.id));
-
-    if (episode.transcriptVttBlobUrl && episode.transcriptVttBlobUrl !== storedWebVtt.url) {
-      await deleteTranscriptFromBlob(episode.transcriptVttBlobUrl).catch(() => {
-        return undefined;
-      });
-    }
-
     const embeddings = await embedTextBatch(chunks.map((chunk) => chunk.text));
 
     const namespace = getNamespace(podcast.clerkUserId);
@@ -121,11 +107,18 @@ export async function processEpisodePipeline(input: { episodeId: string }) {
       .update(episodes)
       .set({
         status: "completed",
+        transcriptVttBlobUrl: storedWebVtt.url,
         durationSec,
         errorMessage: null,
         updatedAt: new Date()
       })
       .where(eq(episodes.id, episode.id));
+
+    if (episode.transcriptVttBlobUrl && episode.transcriptVttBlobUrl !== storedWebVtt.url) {
+      await deleteTranscriptFromBlob(episode.transcriptVttBlobUrl).catch(() => {
+        return undefined;
+      });
+    }
 
     shouldKeepTranscriptVtt = true;
 
@@ -154,14 +147,6 @@ export async function processEpisodePipeline(input: { episodeId: string }) {
       await deleteTranscriptFromBlob(uploadedTranscriptVttUrl).catch(() => {
         return undefined;
       });
-
-      await db
-        .update(episodes)
-        .set({
-          transcriptVttBlobUrl: null,
-          updatedAt: new Date()
-        })
-        .where(eq(episodes.id, episode.id));
     }
 
     if (uploadedBlobUrl) {
