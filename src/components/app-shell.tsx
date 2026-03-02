@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { UserButton, useUser } from "@clerk/nextjs";
 import { useEffect, useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -17,9 +17,10 @@ type SidebarPodcast = {
 type AppShellProps = {
   children: React.ReactNode;
   podcasts: SidebarPodcast[];
+  planName: string;
 };
 
-export function AppShell({ children, podcasts }: AppShellProps) {
+export function AppShell({ children, podcasts, planName }: AppShellProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useUser();
@@ -36,7 +37,7 @@ export function AppShell({ children, podcasts }: AppShellProps) {
           pathname={pathname}
           podcasts={podcasts}
           userName={user?.fullName ?? user?.firstName ?? user?.primaryEmailAddress?.emailAddress ?? "Workspace User"}
-          userImageUrl={user?.imageUrl ?? null}
+          planName={planName}
         />
       </aside>
 
@@ -56,7 +57,7 @@ export function AppShell({ children, podcasts }: AppShellProps) {
           pathname={pathname}
           podcasts={podcasts}
           userName={user?.fullName ?? user?.firstName ?? user?.primaryEmailAddress?.emailAddress ?? "Workspace User"}
-          userImageUrl={user?.imageUrl ?? null}
+          planName={planName}
         />
       </aside>
 
@@ -116,12 +117,12 @@ function SidebarContent({
   pathname,
   podcasts,
   userName,
-  userImageUrl
+  planName
 }: {
   pathname: string;
   podcasts: SidebarPodcast[];
   userName: string;
-  userImageUrl: string | null;
+  planName: string;
 }) {
   return (
     <div className="flex h-full flex-col">
@@ -224,22 +225,20 @@ function SidebarContent({
 
       <div className="border-t border-white/80 px-5 py-5">
         <div className="flex items-center gap-3 rounded-2xl bg-white/70 px-3 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.05)]">
-          <div className="shrink-0">
-            {userImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={userImageUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
-            ) : (
-              <div className="grid h-9 w-9 place-items-center rounded-full bg-white text-xs font-semibold text-slate-700">
-                {userName.slice(0, 1).toUpperCase()}
-              </div>
-            )}
+          <div className="shrink-0 self-center">
+            <UserButton
+              appearance={{
+                elements: {
+                  rootBox: "flex items-center",
+                  userButtonTrigger: "h-9 w-9 overflow-hidden rounded-full p-0",
+                  avatarBox: "h-9 w-9"
+                }
+              }}
+            />
           </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-slate-900">{userName}</p>
-            <p className="truncate text-xs text-slate-500">Workspace Member</p>
-          </div>
-          <div className="ml-auto shrink-0 text-slate-400">
-            <SettingsIcon />
+          <div className="min-w-0 self-center">
+            <p className="truncate text-sm font-semibold leading-tight text-slate-900">{userName}</p>
+            <p className="mt-0.5 truncate text-xs leading-tight text-slate-500">{formatPlanName(planName)}</p>
           </div>
         </div>
       </div>
@@ -315,16 +314,10 @@ function AnalyticsIcon() {
   );
 }
 
-function SettingsIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5">
-      <path
-        d="M8.1 3.2h3.8l.5 1.8c.2.1.4.2.6.3l1.8-.7 1.9 3.2-1.4 1.3v.7l1.4 1.3-1.9 3.2-1.8-.7c-.2.1-.4.2-.6.3l-.5 1.8H8.1l-.5-1.8-.6-.3-1.8.7-1.9-3.2L4.7 10v-.7L3.3 8l1.9-3.2 1.8.7.6-.3.5-1.8Z"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-      />
-      <circle cx="10" cy="10" r="2.2" stroke="currentColor" strokeWidth="1.2" />
-    </svg>
-  );
+function formatPlanName(planName: string) {
+  if (!planName) {
+    return "Free Plan";
+  }
+
+  return /plan/i.test(planName) ? planName : `${planName} Plan`;
 }

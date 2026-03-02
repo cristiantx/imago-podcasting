@@ -85,6 +85,16 @@ export async function getEntitlementSnapshot(clerkUserId: string): Promise<Entit
   };
 }
 
+export async function getPlanNameForUser(clerkUserId: string): Promise<string> {
+  const entitlement = await getOrCreateEntitlement(clerkUserId);
+  const plan = await db.query.plans.findFirst({
+    columns: { name: true },
+    where: eq(plans.id, entitlement.planId)
+  });
+
+  return plan?.name ?? "Free";
+}
+
 export async function reserveEpisodeUnits(input: {
   clerkUserId: string;
   podcastId: string;

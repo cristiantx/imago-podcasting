@@ -35,7 +35,6 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: "Plus Jakarta Sans", "Avenir Next", "Segoe UI", sans-serif;
     background-image:
       radial-gradient(circle at 18% -12%, hsla(267, 74%, 92%, 0.62), transparent 36%),
       radial-gradient(circle at 92% 8%, hsla(223, 38%, 90%, 0.56), transparent 34%),
@@ -46,7 +45,6 @@
   h2,
   h3,
   h4 {
-    font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
     letter-spacing: -0.02em;
   }
 }
