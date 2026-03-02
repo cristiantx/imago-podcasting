@@ -1,9 +1,11 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { inngest } from "@/inngest/client";
+import { getEnv } from "@/lib/config";
 import { db } from "@/lib/db/client";
-import { releaseReservedUnit, reserveEpisodeUnits } from "@/lib/entitlements/service";
-import { episodes, ingestJobs, podcasts } from "@/lib/db/schema";
+import { computeReservationPolicy } from "@/lib/entitlements/policy";
+import { getOrCreateEntitlement, releaseReservedUnit, reserveEpisodeUnits } from "@/lib/entitlements/service";
+import { episodes, ingestJobs, plans, podcasts, usageLedger } from "@/lib/db/schema";
 import { parseRssFeed } from "@/lib/rss/parse-feed";
 
 type ImportRequest = {
@@ -22,6 +24,147 @@ type ImportResult = {
   queueDispatchStatus: QueueDispatchStatus;
   queueDispatchError: string | null;
 };
+
+type ImportPreviewPayload = {
+  feed: {
+    rssUrl: string;
+    title: string | null;
+    description: string | null;
+    imageUrl: string | null;
+    language: string;
+    totalEpisodes: number;
+  };
+  usage: {
+    planCode: string;
+    planQuota: number;
+    extraCredits: number;
+    consumedUnits: number;
+    remainingUnits: number;
+  };
+  importPolicy: {
+    maxImportable: number;
+    defaultRequestedEpisodes: number;
+    upgradeSuggested: boolean;
+  };
+  episodes: Array<{
+    guid: string;
+    title: string;
+    publishedAt: string | null;
+    durationSec: number | null;
+    episodeUrl: string;
+    episodeImageUrl: string | null;
+  }>;
+};
+
+export type ImportPreviewResult =
+  | {
+      status: "existing_feed";
+      podcastId: string;
+      podcastTitle: string | null;
+    }
+  | {
+      status: "ready";
+      payload: ImportPreviewPayload;
+    };
+
+export async function getExistingPodcastForFeed(input: { clerkUserId: string; feedUrl: string }) {
+  return db.query.podcasts.findFirst({
+    columns: { id: true, title: true },
+    where: and(eq(podcasts.clerkUserId, input.clerkUserId), eq(podcasts.feedUrl, input.feedUrl))
+  });
+}
+
+export async function previewImportFromFeed(input: { clerkUserId: string; rssUrl: string }): Promise<ImportPreviewResult> {
+  const existing = await getExistingPodcastForFeed({ clerkUserId: input.clerkUserId, feedUrl: input.rssUrl });
+  if (existing) {
+    return {
+      status: "existing_feed",
+      podcastId: existing.id,
+      podcastTitle: existing.title
+    };
+  }
+
+  const parsedFeed = await parseRssFeed(input.rssUrl);
+  const entitlement = await getOrCreateEntitlement(input.clerkUserId);
+  const plan = await db.query.plans.findFirst({
+    columns: { id: true, code: true, baseEpisodeQuota: true },
+    where: eq(plans.id, entitlement.planId)
+  });
+
+  if (!plan) {
+    throw new Error("Entitlement plan not found");
+  }
+
+  const [{ planUsed }] = await db
+    .select({ planUsed: sql<number>`coalesce(sum(${usageLedger.units}), 0)` })
+    .from(usageLedger)
+    .where(
+      and(
+        eq(usageLedger.clerkUserId, input.clerkUserId),
+        eq(usageLedger.source, "plan"),
+        inArray(usageLedger.status, ["reserved", "consumed"])
+      )
+    );
+
+  const [{ creditUsed }] = await db
+    .select({ creditUsed: sql<number>`coalesce(sum(${usageLedger.units}), 0)` })
+    .from(usageLedger)
+    .where(
+      and(
+        eq(usageLedger.clerkUserId, input.clerkUserId),
+        eq(usageLedger.source, "credit"),
+        inArray(usageLedger.status, ["reserved", "consumed"])
+      )
+    );
+
+  const policy = computeReservationPolicy({
+    feedEpisodeCount: parsedFeed.episodes.length,
+    requestedEpisodes: undefined,
+    planQuota: plan.baseEpisodeQuota,
+    planUsed: Number(planUsed ?? 0),
+    extraCredits: entitlement.extraEpisodeCredits,
+    creditUsed: Number(creditUsed ?? 0),
+    operationalCap: getEnv().ABSOLUTE_EPISODE_SAFETY_CAP
+  });
+
+  const maxImportable = policy.allowedForJob;
+  const consumedUnits = Number(planUsed ?? 0) + Number(creditUsed ?? 0);
+  const defaultRequestedEpisodes = maxImportable > 0 ? Math.min(5, maxImportable) : 0;
+
+  return {
+    status: "ready",
+    payload: {
+      feed: {
+        rssUrl: input.rssUrl,
+        title: parsedFeed.title,
+        description: parsedFeed.description,
+        imageUrl: parsedFeed.imageUrl,
+        language: parsedFeed.language,
+        totalEpisodes: parsedFeed.episodes.length
+      },
+      usage: {
+        planCode: plan.code,
+        planQuota: plan.baseEpisodeQuota,
+        extraCredits: entitlement.extraEpisodeCredits,
+        consumedUnits,
+        remainingUnits: policy.availableTotal
+      },
+      importPolicy: {
+        maxImportable,
+        defaultRequestedEpisodes,
+        upgradeSuggested: parsedFeed.episodes.length > maxImportable
+      },
+      episodes: parsedFeed.episodes.map((episode) => ({
+        guid: episode.guid,
+        title: episode.title,
+        publishedAt: episode.publishedAt ? episode.publishedAt.toISOString() : null,
+        durationSec: episode.durationSec,
+        episodeUrl: episode.episodeUrl,
+        episodeImageUrl: episode.episodeImageUrl
+      }))
+    }
+  };
+}
 
 export async function startImportFromFeed(input: ImportRequest): Promise<ImportResult> {
   const parsedFeed = await parseRssFeed(input.rssUrl);
