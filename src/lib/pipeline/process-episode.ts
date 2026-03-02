@@ -5,6 +5,8 @@ import { episodes, podcasts, transcriptSegments } from "@/lib/db/schema";
 import { chunkUtterances } from "@/lib/chunking/transcript-chunker";
 import { releaseReservedUnit, markUnitConsumed } from "@/lib/entitlements/service";
 import { downloadAndStoreAudio, deleteAudioFromBlob } from "@/lib/storage/audio";
+import { deleteTranscriptFromBlob, storeEpisodeWebVtt } from "@/lib/storage/transcript";
+import { buildWebVttFromUtterances } from "@/lib/transcription/captions";
 import { transcribeFromUrl } from "@/lib/transcription/deepgram";
 import { embedTextBatch } from "@/lib/vector/embeddings";
 import { getNamespace } from "@/lib/vector/pinecone";
@@ -22,6 +24,8 @@ export async function processEpisodePipeline(input: { episodeId: string }) {
   }
 
   let uploadedBlobUrl: string | null = null;
+  let uploadedTranscriptVttUrl: string | null = null;
+  let shouldKeepTranscriptVtt = false;
 
   try {
     await db.update(episodes).set({ status: "processing", updatedAt: new Date() }).where(eq(episodes.id, episode.id));
@@ -48,6 +52,15 @@ export async function processEpisodePipeline(input: { episodeId: string }) {
     if (chunks.length === 0) {
       throw new Error("No transcript content produced for this episode");
     }
+
+    const webVttContent = buildWebVttFromUtterances(utterances);
+    const storedWebVtt = await storeEpisodeWebVtt({
+      podcastId: episode.podcastId,
+      episodeId: episode.id,
+      content: webVttContent
+    });
+
+    uploadedTranscriptVttUrl = storedWebVtt.url;
 
     const embeddings = await embedTextBatch(chunks.map((chunk) => chunk.text));
 
@@ -94,11 +107,20 @@ export async function processEpisodePipeline(input: { episodeId: string }) {
       .update(episodes)
       .set({
         status: "completed",
+        transcriptVttBlobUrl: storedWebVtt.url,
         durationSec,
         errorMessage: null,
         updatedAt: new Date()
       })
       .where(eq(episodes.id, episode.id));
+
+    if (episode.transcriptVttBlobUrl && episode.transcriptVttBlobUrl !== storedWebVtt.url) {
+      await deleteTranscriptFromBlob(episode.transcriptVttBlobUrl).catch(() => {
+        return undefined;
+      });
+    }
+
+    shouldKeepTranscriptVtt = true;
 
     if (episode.usageLedgerId) {
       await markUnitConsumed(episode.usageLedgerId, episode.id);
@@ -121,6 +143,12 @@ export async function processEpisodePipeline(input: { episodeId: string }) {
 
     throw error;
   } finally {
+    if (uploadedTranscriptVttUrl && !shouldKeepTranscriptVtt) {
+      await deleteTranscriptFromBlob(uploadedTranscriptVttUrl).catch(() => {
+        return undefined;
+      });
+    }
+
     if (uploadedBlobUrl) {
       await deleteAudioFromBlob(uploadedBlobUrl).catch(() => {
         return undefined;

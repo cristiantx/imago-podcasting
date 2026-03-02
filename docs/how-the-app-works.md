@@ -1,6 +1,7 @@
 # How Imago Podcasting Works
 
 This document explains the runtime flow of the app, with emphasis on backend events, processing, and data movement.
+For question/answer history and finalized choices, see [technical-decisions.md](./technical-decisions.md).
 
 ## 1) High-level architecture
 

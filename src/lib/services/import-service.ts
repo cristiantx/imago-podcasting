@@ -36,12 +36,37 @@ export async function startImportFromFeed(input: ImportRequest): Promise<ImportR
   });
 
   const existingEpisodes = await db.query.episodes.findMany({
-    columns: { rssGuid: true },
+    columns: { id: true, rssGuid: true, episodeImageUrl: true },
     where: eq(episodes.podcastId, podcast.id)
   });
 
-  const existingGuids = new Set(existingEpisodes.map((item) => item.rssGuid));
-  const newCandidates = parsedFeed.episodes.filter((item) => !existingGuids.has(item.guid));
+  const existingByGuid = new Map(existingEpisodes.map((episode) => [episode.rssGuid, episode]));
+
+  const imageBackfills = parsedFeed.episodes.filter((episode) => {
+    const existing = existingByGuid.get(episode.guid);
+    return Boolean(existing && !existing.episodeImageUrl && episode.episodeImageUrl);
+  });
+
+  if (imageBackfills.length > 0) {
+    await Promise.all(
+      imageBackfills.map(async (episode) => {
+        const existing = existingByGuid.get(episode.guid);
+        if (!existing || !episode.episodeImageUrl) {
+          return;
+        }
+
+        await db
+          .update(episodes)
+          .set({
+            episodeImageUrl: episode.episodeImageUrl,
+            updatedAt: new Date()
+          })
+          .where(eq(episodes.id, existing.id));
+      })
+    );
+  }
+
+  const newCandidates = parsedFeed.episodes.filter((item) => !existingByGuid.has(item.guid));
 
   const reservationKey = crypto.randomUUID();
   const reservation = await reserveEpisodeUnits({
@@ -91,6 +116,7 @@ export async function startImportFromFeed(input: ImportRequest): Promise<ImportR
     publishedAt: episode.publishedAt,
     audioUrl: episode.audioUrl,
     episodeUrl: episode.episodeUrl,
+    episodeImageUrl: episode.episodeImageUrl,
     durationSec: episode.durationSec,
     status: "queued",
     usageLedgerId: reservation.reservedUnits[index]?.id

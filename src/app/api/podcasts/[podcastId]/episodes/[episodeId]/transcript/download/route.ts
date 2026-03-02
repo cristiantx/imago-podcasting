@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/session";
 import { fail } from "@/lib/http";
-import { buildEpisodeTranscriptTextExport } from "@/lib/services/transcript-export";
+import { buildEpisodeTranscriptVttExport } from "@/lib/services/transcript-export";
 import { podcastIdSchema } from "@/lib/validation/common";
 
 const episodeIdSchema = z.string().uuid();
@@ -15,7 +15,7 @@ export async function GET(
     const clerkUserId = await requireUser();
     const { podcastId, episodeId } = await context.params;
 
-    const file = await buildEpisodeTranscriptTextExport({
+    const file = await buildEpisodeTranscriptVttExport({
       clerkUserId,
       podcastId: podcastIdSchema.parse(podcastId),
       episodeId: episodeIdSchema.parse(episodeId)
@@ -24,7 +24,7 @@ export async function GET(
     return new Response(file.content, {
       status: 200,
       headers: {
-        "Content-Type": "text/plain; charset=utf-8",
+        "Content-Type": "text/vtt; charset=utf-8",
         "Content-Disposition": `attachment; filename="${file.filename}"`
       }
     });

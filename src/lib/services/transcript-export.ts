@@ -1,7 +1,10 @@
 import { and, eq, inArray } from "drizzle-orm";
 
+import type { Utterance } from "@/lib/chunking/transcript-chunker";
 import { db } from "@/lib/db/client";
 import { episodes, podcasts, transcriptSegments } from "@/lib/db/schema";
+import { storeEpisodeWebVtt } from "@/lib/storage/transcript";
+import { buildWebVttFromUtterances } from "@/lib/transcription/captions";
 
 export async function buildPodcastTranscriptTextExport(input: { clerkUserId: string; podcastId: string }) {
   const podcast = await db.query.podcasts.findFirst({
@@ -85,7 +88,7 @@ export async function buildPodcastTranscriptTextExport(input: { clerkUserId: str
   };
 }
 
-export async function buildEpisodeTranscriptTextExport(input: {
+export async function buildEpisodeTranscriptVttExport(input: {
   clerkUserId: string;
   podcastId: string;
   episodeId: string;
@@ -106,6 +109,25 @@ export async function buildEpisodeTranscriptTextExport(input: {
     throw new Error("Episode not found");
   }
 
+  const filename = toSafeFilename(`${episode.title}-transcript-${new Date().toISOString().slice(0, 10)}.vtt`);
+
+  if (episode.transcriptVttBlobUrl) {
+    const storedVtt = await fetch(episode.transcriptVttBlobUrl)
+      .then(async (response) => {
+        if (!response.ok) {
+          return null;
+        }
+
+        const content = await response.text();
+        return content.trim().startsWith("WEBVTT") ? content : null;
+      })
+      .catch(() => null);
+
+    if (storedVtt) {
+      return { filename, content: storedVtt };
+    }
+  }
+
   const segments = await db.query.transcriptSegments.findMany({
     where: eq(transcriptSegments.episodeId, episode.id),
     orderBy: [transcriptSegments.chunkIndex]
@@ -115,23 +137,33 @@ export async function buildEpisodeTranscriptTextExport(input: {
     throw new Error("No transcript segments available for this episode");
   }
 
-  const lines: string[] = [];
-  lines.push(`# ${podcast.title ?? "Untitled Podcast"}`);
-  lines.push(`## ${episode.title}`);
-  lines.push(`Episode URL: ${episode.episodeUrl ?? episode.audioUrl}`);
-  lines.push(`Published: ${episode.publishedAt ? new Date(episode.publishedAt).toISOString() : "unknown"}`);
-  lines.push(`Generated: ${new Date().toISOString()}`);
-  lines.push("");
+  const utterances: Utterance[] = segments.map((segment) => ({
+    speaker: segment.speakerLabel,
+    startMs: segment.startMs,
+    endMs: segment.endMs,
+    text: segment.text
+  }));
+  const content = buildWebVttFromUtterances(utterances);
 
-  for (const segment of segments) {
-    const speaker = segment.speakerLabel ?? "Speaker";
-    lines.push(`[${formatTimestamp(segment.startMs)} - ${formatTimestamp(segment.endMs)}] ${speaker}: ${segment.text}`);
-  }
+  await storeEpisodeWebVtt({
+    podcastId: podcast.id,
+    episodeId: episode.id,
+    content
+  })
+    .then(async (stored) => {
+      await db
+        .update(episodes)
+        .set({
+          transcriptVttBlobUrl: stored.url,
+          updatedAt: new Date()
+        })
+        .where(eq(episodes.id, episode.id));
+    })
+    .catch(() => {
+      return undefined;
+    });
 
-  return {
-    filename: toSafeFilename(`${episode.title}-transcript-${new Date().toISOString().slice(0, 10)}.txt`),
-    content: lines.join("\n")
-  };
+  return { filename, content };
 }
 
 function groupSegmentsByEpisode(
