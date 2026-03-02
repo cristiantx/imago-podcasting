@@ -102,6 +102,7 @@ export const episodes = pgTable(
     publishedAt: timestamp("published_at", { withTimezone: true }),
     audioUrl: text("audio_url").notNull(),
     episodeUrl: text("episode_url"),
+    episodeImageUrl: text("episode_image_url"),
     audioBlobUrl: text("audio_blob_url"),
     transcriptVttBlobUrl: text("transcript_vtt_blob_url"),
     durationSec: integer("duration_sec"),

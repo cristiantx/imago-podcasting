@@ -4,23 +4,23 @@
 
 @layer base {
   :root {
-    --background: 225 25% 95%;
-    --foreground: 228 20% 16%;
+    --background: 240 14% 96%;
+    --foreground: 222 31% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 228 20% 16%;
-    --primary: 248 69% 61%;
+    --card-foreground: 222 31% 14%;
+    --primary: 268 80% 57%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 226 28% 92%;
-    --secondary-foreground: 228 20% 16%;
-    --muted: 225 24% 91%;
-    --muted-foreground: 225 12% 41%;
-    --accent: 248 80% 92%;
-    --accent-foreground: 248 42% 29%;
+    --secondary: 228 22% 92%;
+    --secondary-foreground: 222 31% 14%;
+    --muted: 228 22% 92%;
+    --muted-foreground: 218 16% 43%;
+    --accent: 268 62% 93%;
+    --accent-foreground: 268 40% 31%;
     --destructive: 0 72% 48%;
     --destructive-foreground: 0 0% 100%;
-    --border: 226 19% 86%;
-    --input: 226 19% 86%;
-    --ring: 248 69% 61%;
+    --border: 220 20% 88%;
+    --input: 220 20% 88%;
+    --ring: 268 80% 57%;
     --radius: 1rem;
   }
 
@@ -37,9 +37,9 @@
     @apply bg-background text-foreground antialiased;
     font-family: "Plus Jakarta Sans", "Avenir Next", "Segoe UI", sans-serif;
     background-image:
-      radial-gradient(circle at 10% 0%, hsla(248, 58%, 84%, 0.45), transparent 30%),
-      radial-gradient(circle at 90% 18%, hsla(250, 50%, 90%, 0.45), transparent 34%),
-      linear-gradient(180deg, hsla(222, 22%, 76%, 1) 0%, hsla(225, 24%, 86%, 1) 100%);
+      radial-gradient(circle at 18% -12%, hsla(267, 74%, 92%, 0.62), transparent 36%),
+      radial-gradient(circle at 92% 8%, hsla(223, 38%, 90%, 0.56), transparent 34%),
+      linear-gradient(180deg, hsl(240 18% 97%) 0%, hsl(234 18% 94%) 100%);
   }
 
   h1,
@@ -54,6 +54,14 @@
 @layer components {
   .page-transition {
     animation: fade-slide-in 320ms ease;
+  }
+
+  .app-shell-card {
+    @apply rounded-[28px] border border-white/80 bg-white shadow-[0_22px_60px_rgba(79,70,229,0.06),0_1px_2px_rgba(15,23,42,0.08)];
+  }
+
+  .sidebar-scroll {
+    scrollbar-width: thin;
   }
 
   .glass-panel {

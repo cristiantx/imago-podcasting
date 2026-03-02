@@ -6,6 +6,7 @@ type ParsedEpisode = {
   publishedAt: Date | null;
   audioUrl: string;
   episodeUrl: string;
+  episodeImageUrl: string | null;
   durationSec: number | null;
 };
 
@@ -25,13 +26,19 @@ type FeedItem = {
   isoDate?: string;
   enclosure?: { url?: string };
   link?: string;
-  itunes?: { duration?: string };
+  itunes?: { duration?: string; image?: unknown };
   itunesDuration?: string;
+  itunesImage?: unknown;
+  mediaThumbnail?: unknown;
 };
 
 const parser = new Parser<unknown, FeedItem>({
   customFields: {
-    item: [["itunes:duration", "itunesDuration"]]
+    item: [
+      ["itunes:duration", "itunesDuration"],
+      ["itunes:image", "itunesImage"],
+      ["media:thumbnail", "mediaThumbnail"]
+    ]
   }
 });
 
@@ -58,6 +65,7 @@ export async function parseRssFeed(url: string): Promise<ParsedFeed> {
         publishedAt: publishedAt && !Number.isNaN(publishedAt.getTime()) ? publishedAt : null,
         audioUrl,
         episodeUrl: item.link ?? audioUrl,
+        episodeImageUrl: extractEpisodeImageUrl(item),
         durationSec: parseDuration(durationRaw)
       } satisfies ParsedEpisode;
     })
@@ -97,6 +105,71 @@ function parseDuration(raw: string | undefined): number | null {
 
   if (parts.length === 2) {
     return parts[0] * 60 + parts[1];
+  }
+
+  return null;
+}
+
+function extractEpisodeImageUrl(item: FeedItem): string | null {
+  const imageCandidate = [item.itunesImage, item.mediaThumbnail, item.itunes?.image];
+
+  for (const candidate of imageCandidate) {
+    const resolved = resolveImageUrl(candidate);
+    if (resolved) {
+      return resolved;
+    }
+  }
+
+  return null;
+}
+
+function resolveImageUrl(value: unknown): string | null {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const resolved = resolveImageUrl(item);
+      if (resolved) {
+        return resolved;
+      }
+    }
+    return null;
+  }
+
+  if (typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  const directHref = record.href;
+  if (typeof directHref === "string" && directHref.trim().length > 0) {
+    return directHref.trim();
+  }
+
+  const directUrl = record.url;
+  if (typeof directUrl === "string" && directUrl.trim().length > 0) {
+    return directUrl.trim();
+  }
+
+  const attrs = record.$ as Record<string, unknown> | undefined;
+  if (attrs) {
+    const attrHref = attrs.href;
+    if (typeof attrHref === "string" && attrHref.trim().length > 0) {
+      return attrHref.trim();
+    }
+
+    const attrUrl = attrs.url;
+    if (typeof attrUrl === "string" && attrUrl.trim().length > 0) {
+      return attrUrl.trim();
+    }
   }
 
   return null;

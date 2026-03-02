@@ -2,6 +2,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
 import { episodes, ingestJobs, podcasts, transcriptSegments } from "@/lib/db/schema";
+import type { DashboardEpisodeRow } from "@/lib/ui/dashboard-overview";
 
 type EpisodeStatus = "queued" | "processing" | "completed" | "failed" | string;
 
@@ -130,6 +131,67 @@ export async function getPodcastEpisodesForUser(input: { clerkUserId: string; po
       };
     })
   };
+}
+
+export async function listDashboardEpisodesForUser(clerkUserId: string): Promise<DashboardEpisodeRow[]> {
+  const podcastRows = await db.query.podcasts.findMany({
+    columns: {
+      id: true,
+      title: true,
+      imageUrl: true
+    },
+    where: eq(podcasts.clerkUserId, clerkUserId),
+    orderBy: [desc(podcasts.updatedAt)]
+  });
+
+  const podcastIds = podcastRows.map((podcast) => podcast.id);
+  if (podcastIds.length === 0) {
+    return [];
+  }
+
+  const episodeRows = await db.query.episodes.findMany({
+    columns: {
+      id: true,
+      podcastId: true,
+      title: true,
+      episodeImageUrl: true,
+      episodeUrl: true,
+      publishedAt: true,
+      durationSec: true,
+      status: true,
+      createdAt: true
+    },
+    where: inArray(episodes.podcastId, podcastIds),
+    orderBy: [desc(episodes.publishedAt), desc(episodes.createdAt)],
+    limit: 200
+  });
+
+  const podcastById = new Map(
+    podcastRows.map((podcast) => [
+      podcast.id,
+      {
+        title: podcast.title,
+        imageUrl: podcast.imageUrl
+      }
+    ])
+  );
+
+  return episodeRows.map((episode) => {
+    const podcast = podcastById.get(episode.podcastId);
+
+    return {
+      id: episode.id,
+      podcastId: episode.podcastId,
+      podcastTitle: podcast?.title ?? null,
+      podcastImageUrl: podcast?.imageUrl ?? null,
+      episodeTitle: episode.title,
+      episodeImageUrl: episode.episodeImageUrl,
+      episodeUrl: episode.episodeUrl,
+      publishedAt: episode.publishedAt ? episode.publishedAt.toISOString() : null,
+      durationSec: episode.durationSec,
+      status: episode.status
+    };
+  });
 }
 
 function summarizeStageCounts(statuses: EpisodeStatus[]) {
