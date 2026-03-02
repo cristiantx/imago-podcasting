@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/session";
 import { fail, ok } from "@/lib/http";
-import { startImportFromFeed } from "@/lib/services/import-service";
+import { getExistingPodcastForFeed, startImportFromFeed } from "@/lib/services/import-service";
 import { requestedEpisodesSchema, rssUrlSchema } from "@/lib/validation/common";
 
 const bodySchema = z.object({
@@ -14,6 +14,14 @@ export async function POST(request: Request) {
   try {
     const clerkUserId = await requireUser();
     const body = bodySchema.parse(await request.json());
+    const existing = await getExistingPodcastForFeed({ clerkUserId, feedUrl: body.rssUrl });
+
+    if (existing) {
+      return fail("Feed already exists in your workspace", 409, {
+        podcastId: existing.id,
+        podcastTitle: existing.title
+      });
+    }
 
     const result = await startImportFromFeed({
       clerkUserId,
