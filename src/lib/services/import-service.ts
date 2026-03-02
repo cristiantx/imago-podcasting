@@ -12,6 +12,7 @@ type ImportRequest = {
   clerkUserId: string;
   rssUrl: string;
   requestedEpisodes?: number;
+  selectedEpisodeGuids?: string[];
 };
 
 type QueueDispatchStatus = "not_required" | "sent" | "failed";
@@ -210,17 +211,19 @@ export async function startImportFromFeed(input: ImportRequest): Promise<ImportR
   }
 
   const newCandidates = parsedFeed.episodes.filter((item) => !existingByGuid.has(item.guid));
+  const selectedGuidSet = new Set((input.selectedEpisodeGuids ?? []).filter((guid) => guid.length > 0));
+  const candidatePool = selectedGuidSet.size > 0 ? newCandidates.filter((episode) => selectedGuidSet.has(episode.guid)) : newCandidates;
 
   const reservationKey = crypto.randomUUID();
   const reservation = await reserveEpisodeUnits({
     clerkUserId: input.clerkUserId,
     podcastId: podcast.id,
     requestedEpisodes: input.requestedEpisodes,
-    feedEpisodeCount: newCandidates.length,
+    feedEpisodeCount: candidatePool.length,
     reservationKey
   });
 
-  const selected = newCandidates.slice(0, reservation.allowedForJob);
+  const selected = candidatePool.slice(0, reservation.allowedForJob);
 
   const [job] = await db
     .insert(ingestJobs)

@@ -140,4 +140,36 @@ describe("podcast import routes", () => {
     const payload = (await response.json()) as { error: string };
     expect(payload.error).toBe("Unauthorized");
   });
+
+  it("passes selected episode guids to import service", async () => {
+    getExistingPodcastForFeedMock.mockResolvedValue(undefined);
+    startImportFromFeedMock.mockResolvedValue({
+      podcastId: "podcast_new",
+      jobId: "job_1",
+      allowedEpisodes: 2,
+      remainingAfterReservation: 3,
+      queueDispatchStatus: "sent",
+      queueDispatchError: null
+    });
+
+    const response = await importRoutePost(
+      new Request("http://localhost/api/podcasts/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rssUrl: "https://example.com/feed.xml",
+          requestedEpisodes: 2,
+          selectedEpisodeGuids: ["guid-1", "guid-3"]
+        })
+      })
+    );
+
+    expect(response.status).toBe(200);
+    expect(startImportFromFeedMock).toHaveBeenCalledWith({
+      clerkUserId: "user_123",
+      rssUrl: "https://example.com/feed.xml",
+      requestedEpisodes: 2,
+      selectedEpisodeGuids: ["guid-1", "guid-3"]
+    });
+  });
 });

@@ -3,11 +3,12 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth/session";
 import { fail, ok } from "@/lib/http";
 import { getExistingPodcastForFeed, startImportFromFeed } from "@/lib/services/import-service";
-import { requestedEpisodesSchema, rssUrlSchema } from "@/lib/validation/common";
+import { requestedEpisodesSchema, rssUrlSchema, selectedEpisodeGuidsSchema } from "@/lib/validation/common";
 
 const bodySchema = z.object({
   rssUrl: rssUrlSchema,
-  requestedEpisodes: requestedEpisodesSchema
+  requestedEpisodes: requestedEpisodesSchema,
+  selectedEpisodeGuids: selectedEpisodeGuidsSchema
 });
 
 export async function POST(request: Request) {
@@ -26,7 +27,8 @@ export async function POST(request: Request) {
     const result = await startImportFromFeed({
       clerkUserId,
       rssUrl: body.rssUrl,
-      requestedEpisodes: body.requestedEpisodes
+      requestedEpisodes: body.requestedEpisodes,
+      selectedEpisodeGuids: body.selectedEpisodeGuids
     });
 
     return ok(result);

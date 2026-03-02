@@ -60,7 +60,7 @@ const PREVIEW_LIST_LIMIT = 25;
 export function RssImportForm() {
   const router = useRouter();
   const [rssUrl, setRssUrl] = useState("");
-  const [requestedEpisodes, setRequestedEpisodes] = useState(0);
+  const [selectedEpisodeGuids, setSelectedEpisodeGuids] = useState<string[]>([]);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
@@ -76,12 +76,16 @@ export function RssImportForm() {
     return preview.episodes.slice(0, PREVIEW_LIST_LIMIT);
   }, [preview]);
 
+  const selectedGuidSet = useMemo(() => new Set(selectedEpisodeGuids), [selectedEpisodeGuids]);
+  const selectedCount = selectedEpisodeGuids.length;
+
   async function onLoadFeed(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPreviewLoading(true);
     setPreviewError(null);
     setImportError(null);
     setExistingFeed(null);
+    setSelectedEpisodeGuids([]);
 
     try {
       const res = await fetch("/api/podcasts/import/preview", {
@@ -105,9 +109,10 @@ export function RssImportForm() {
 
       const nextPreview = payload as PreviewResponse;
       setPreview(nextPreview);
-      setRequestedEpisodes(nextPreview.importPolicy.defaultRequestedEpisodes);
+      setSelectedEpisodeGuids(importableGuidsByCount(nextPreview, nextPreview.importPolicy.defaultRequestedEpisodes));
     } catch (err: unknown) {
       setPreview(null);
+      setSelectedEpisodeGuids([]);
       setPreviewError(err instanceof Error ? err.message : "Failed to load RSS feed.");
     } finally {
       setPreviewLoading(false);
@@ -126,7 +131,11 @@ export function RssImportForm() {
       const res = await fetch("/api/podcasts/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rssUrl: preview.feed.rssUrl, requestedEpisodes })
+        body: JSON.stringify({
+          rssUrl: preview.feed.rssUrl,
+          requestedEpisodes: selectedCount,
+          selectedEpisodeGuids
+        })
       });
 
       const payload = (await res.json()) as ImportResponse | ExistingFeedError | { error: string };
@@ -135,6 +144,7 @@ export function RssImportForm() {
         const existing = payload as ExistingFeedError;
         setExistingFeed(existing);
         setPreview(null);
+        setSelectedEpisodeGuids([]);
         return;
       }
 
@@ -156,7 +166,7 @@ export function RssImportForm() {
     setExistingFeed(null);
     setPreviewError(null);
     setImportError(null);
-    setRequestedEpisodes(0);
+    setSelectedEpisodeGuids([]);
   }
 
   function onRequestedEpisodesChange(nextValue: number) {
@@ -166,12 +176,33 @@ export function RssImportForm() {
 
     const maxImportable = preview.importPolicy.maxImportable;
     if (maxImportable === 0) {
-      setRequestedEpisodes(0);
+      setSelectedEpisodeGuids([]);
       return;
     }
 
     const normalized = Math.max(1, Math.min(nextValue, maxImportable));
-    setRequestedEpisodes(normalized);
+    setSelectedEpisodeGuids(importableGuidsByCount(preview, normalized));
+  }
+
+  function onToggleEpisode(guid: string, checked: boolean) {
+    if (!preview) {
+      return;
+    }
+
+    setSelectedEpisodeGuids((current) => {
+      const currentSet = new Set(current);
+      if (!checked) {
+        currentSet.delete(guid);
+        return preview.episodes.filter((episode) => currentSet.has(episode.guid)).map((episode) => episode.guid);
+      }
+
+      if (currentSet.size >= preview.importPolicy.maxImportable) {
+        return current;
+      }
+
+      currentSet.add(guid);
+      return preview.episodes.filter((episode) => currentSet.has(episode.guid)).map((episode) => episode.guid);
+    });
   }
 
   return (
@@ -236,10 +267,10 @@ export function RssImportForm() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-slate-700">Number of recent episodes</p>
-                <p className="text-xs text-muted-foreground">Newest episodes are auto-selected up to your current limit.</p>
+                <p className="text-xs text-muted-foreground">Use the slider for quick selection and checkboxes for fine-tuned bulk import.</p>
               </div>
               <p className="text-sm font-semibold text-primary">
-                {requestedEpisodes} / {preview.importPolicy.maxImportable}
+                {selectedCount} / {preview.importPolicy.maxImportable}
               </p>
             </div>
 
@@ -247,7 +278,7 @@ export function RssImportForm() {
               type="range"
               min={preview.importPolicy.maxImportable > 0 ? 1 : 0}
               max={Math.max(preview.importPolicy.maxImportable, 1)}
-              value={preview.importPolicy.maxImportable > 0 ? requestedEpisodes : 0}
+              value={preview.importPolicy.maxImportable > 0 ? selectedCount : 0}
               onChange={(event) => onRequestedEpisodesChange(Number(event.target.value))}
               className="w-full accent-primary"
               disabled={preview.importPolicy.maxImportable === 0}
@@ -275,7 +306,9 @@ export function RssImportForm() {
             <div className="overflow-hidden rounded-3xl border border-border/80 bg-white/80">
               {previewEpisodes.map((episode, index) => {
                 const withinAllowance = index < preview.importPolicy.maxImportable;
-                const selected = index < requestedEpisodes;
+                const selected = selectedGuidSet.has(episode.guid);
+                const disableUnchecked = !selected && selectedCount >= preview.importPolicy.maxImportable;
+                const disableCheckbox = !withinAllowance || disableUnchecked;
 
                 return (
                   <div
@@ -284,13 +317,14 @@ export function RssImportForm() {
                       !withinAllowance ? "opacity-55" : ""
                     }`}
                   >
-                    <div
-                      className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border text-[10px] font-semibold ${
-                        selected ? "border-primary bg-primary text-white" : "border-border bg-white text-transparent"
-                      }`}
-                    >
-                      •
-                    </div>
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={(event) => onToggleEpisode(episode.guid, event.target.checked)}
+                      disabled={disableCheckbox}
+                      className="h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary disabled:cursor-not-allowed"
+                      aria-label={`Select ${episode.title}`}
+                    />
 
                     {episode.episodeImageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -325,8 +359,8 @@ export function RssImportForm() {
             <Button type="button" variant="ghost" onClick={onCancelPreview}>
               Cancel
             </Button>
-            <Button type="button" onClick={onImportFeed} disabled={importLoading || preview.importPolicy.maxImportable === 0}>
-              {importLoading ? "Starting import..." : `Import ${requestedEpisodes} Episodes`}
+            <Button type="button" onClick={onImportFeed} disabled={importLoading || selectedCount === 0}>
+              {importLoading ? "Starting import..." : `Import ${selectedCount} Episodes`}
             </Button>
           </div>
         </section>
@@ -335,6 +369,11 @@ export function RssImportForm() {
       {importError ? <p className="rounded-2xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">{importError}</p> : null}
     </div>
   );
+}
+
+function importableGuidsByCount(preview: PreviewResponse, count: number) {
+  const max = Math.max(Math.min(count, preview.importPolicy.maxImportable), 0);
+  return preview.episodes.slice(0, max).map((episode) => episode.guid);
 }
 
 function Stat({ title, value }: { title: string; value: string }) {

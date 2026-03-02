@@ -6,6 +6,7 @@ export const rssUrlSchema = z
   .refine((url) => url.startsWith("http://") || url.startsWith("https://"), "Invalid feed URL protocol");
 
 export const requestedEpisodesSchema = z.number().int().positive().max(10_000).optional();
+export const selectedEpisodeGuidsSchema = z.array(z.string().min(1)).max(10_000).optional();
 
 export const podcastIdSchema = z.string().uuid();
 
