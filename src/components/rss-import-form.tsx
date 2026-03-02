@@ -6,6 +6,7 @@ import { FormEvent, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -317,12 +318,11 @@ export function RssImportForm() {
                       !withinAllowance ? "opacity-55" : ""
                     }`}
                   >
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={selected}
-                      onChange={(event) => onToggleEpisode(episode.guid, event.target.checked)}
+                      onCheckedChange={(checked) => onToggleEpisode(episode.guid, checked === true)}
                       disabled={disableCheckbox}
-                      className="h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary disabled:cursor-not-allowed"
+                      className="h-5 w-5 shrink-0 rounded-full border-slate-300 data-[state=checked]:border-primary data-[state=checked]:bg-primary"
                       aria-label={`Select ${episode.title}`}
                     />
 
