@@ -25,8 +25,8 @@ const HEADER_BY_PATH: Record<string, AppHeaderConfig> = {
     subtitle: "Find exact transcript moments with natural language queries"
   },
   "/onboarding": {
-    title: "Add New Feed",
-    subtitle: "Import your podcast RSS feed and start processing episodes"
+    title: "Add New Podcast",
+    subtitle: "Import episodes from an RSS feed to start analyzing."
   },
   "/analytics": {
     title: "Analytics",
