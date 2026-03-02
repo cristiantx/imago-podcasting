@@ -29,3 +29,8 @@ Billing-ready semantic search MVP for podcasters.
 - `POST /api/search`
 - `GET /api/account/entitlements`
 - `POST /api/admin/entitlements/adjust`
+
+## Docs
+
+- [How the app works](./docs/how-the-app-works.md)
+- [Technical decisions log](./docs/technical-decisions.md)
