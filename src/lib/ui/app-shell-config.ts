@@ -8,6 +8,7 @@ export type AppShellNavItem = {
 export type AppHeaderConfig = {
   title: string;
   subtitle: string;
+  showShellHeader?: boolean;
 };
 
 const DEFAULT_HEADER: AppHeaderConfig = {
@@ -60,7 +61,8 @@ export function resolveAppHeaderConfig(pathname: string): AppHeaderConfig {
   if (PODCAST_DETAIL_PATH.test(normalizedPath)) {
     return {
       title: "Podcast Episodes",
-      subtitle: "Track processing status and manage transcript exports"
+      subtitle: "Track processing status and manage transcript exports",
+      showShellHeader: false
     };
   }
 

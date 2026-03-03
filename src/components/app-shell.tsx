@@ -25,6 +25,7 @@ export function AppShell({ children, podcasts, planName }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useUser();
   const headerConfig = useMemo(() => resolveAppHeaderConfig(pathname), [pathname]);
+  const showShellHeader = headerConfig.showShellHeader ?? true;
 
   useEffect(() => {
     setMobileOpen(false);
@@ -62,50 +63,63 @@ export function AppShell({ children, podcasts, planName }: AppShellProps) {
       </aside>
 
       <div className="lg:pl-80">
-        <header className="sticky top-0 z-30 bg-background/95 backdrop-blur">
-          <div className="flex items-center gap-3 px-4 py-5 lg:px-12">
+        {showShellHeader ? (
+          <header className="sticky top-0 z-30 bg-background/95 backdrop-blur">
+            <div className="flex items-center gap-3 px-4 py-5 lg:px-12">
+              <button
+                type="button"
+                className="grid h-10 w-10 place-items-center rounded-full border border-border bg-white text-slate-700 lg:hidden"
+                onClick={() => setMobileOpen((value) => !value)}
+                aria-label="Open menu"
+              >
+                <MenuIcon />
+              </button>
+
+              <div className="min-w-0">
+                <h1
+                  className="text-2xl font-bold tracking-tight text-slate-900 lg:max-w-[24rem] lg:text-3xl"
+                  style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+                  title={headerConfig.title}
+                >
+                  {headerConfig.title}
+                </h1>
+                <p className="max-w-[30rem] truncate text-sm text-slate-500" title={headerConfig.subtitle}>
+                  {headerConfig.subtitle}
+                </p>
+              </div>
+
+              <div className="ml-auto flex items-center gap-3">
+                <label className="relative hidden sm:block">
+                  <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    aria-label="Search episodes"
+                    placeholder="Search episodes..."
+                    className="h-10 w-64 rounded-full border border-white bg-white/90 pl-9 pr-4 text-sm shadow-[0_1px_2px_rgba(15,23,42,0.06)] outline-none transition focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
+                  />
+                </label>
+                <button
+                  type="button"
+                  aria-label="Notifications"
+                  className="grid h-10 w-10 place-items-center rounded-full border border-white bg-white/90 text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:border-primary/45 hover:text-primary"
+                >
+                  <BellIcon />
+                </button>
+              </div>
+            </div>
+          </header>
+        ) : (
+          <div className="px-4 pt-5 lg:hidden">
             <button
               type="button"
-              className="grid h-10 w-10 place-items-center rounded-full border border-border bg-white text-slate-700 lg:hidden"
+              className="grid h-10 w-10 place-items-center rounded-full border border-border bg-white text-slate-700"
               onClick={() => setMobileOpen((value) => !value)}
               aria-label="Open menu"
             >
               <MenuIcon />
             </button>
-
-            <div className="min-w-0">
-              <h1
-                className="text-2xl font-bold tracking-tight text-slate-900 lg:max-w-[24rem] lg:text-3xl"
-                style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
-                title={headerConfig.title}
-              >
-                {headerConfig.title}
-              </h1>
-              <p className="max-w-[30rem] truncate text-sm text-slate-500" title={headerConfig.subtitle}>
-                {headerConfig.subtitle}
-              </p>
-            </div>
-
-            <div className="ml-auto flex items-center gap-3">
-              <label className="relative hidden sm:block">
-                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  aria-label="Search episodes"
-                  placeholder="Search episodes..."
-                  className="h-10 w-64 rounded-full border border-white bg-white/90 pl-9 pr-4 text-sm shadow-[0_1px_2px_rgba(15,23,42,0.06)] outline-none transition focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
-                />
-              </label>
-              <button
-                type="button"
-                aria-label="Notifications"
-                className="grid h-10 w-10 place-items-center rounded-full border border-white bg-white/90 text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:border-primary/45 hover:text-primary"
-              >
-                <BellIcon />
-              </button>
-            </div>
           </div>
-        </header>
+        )}
 
         <main className="px-4 py-6 lg:px-12 lg:py-8">{children}</main>
       </div>

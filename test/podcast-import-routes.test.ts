@@ -54,6 +54,7 @@ describe("podcast import routes", () => {
           {
             guid: "g1",
             title: "Episode 1",
+            summary: "Episode summary",
             publishedAt: "2026-03-01T00:00:00.000Z",
             durationSec: 1234,
             episodeUrl: "https://example.com/ep-1",
