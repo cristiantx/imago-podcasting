@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { EllipsisVertical } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import type { DashboardOverviewPayload } from "@/lib/ui/dashboard-overview";
@@ -140,7 +141,7 @@ export function DashboardHome() {
                             className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-primary/5 hover:text-primary"
                             aria-label="Open episode actions"
                           >
-                            <MoreVerticalIcon />
+                            <EllipsisVertical className="h-4 w-4" aria-hidden="true" />
                           </Link>
                         </div>
                       </td>
@@ -232,14 +233,4 @@ function formatDuration(value: number | null) {
   const seconds = value % 60;
 
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
-
-function MoreVerticalIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-      <circle cx="10" cy="4.5" r="1.4" fill="currentColor" />
-      <circle cx="10" cy="10" r="1.4" fill="currentColor" />
-      <circle cx="10" cy="15.5" r="1.4" fill="currentColor" />
-    </svg>
-  );
 }

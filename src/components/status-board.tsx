@@ -133,7 +133,7 @@ export function StatusBoard() {
                     <StatMini label="Failed" value={podcast.stageCounts.failed} />
                   </div>
                   <p className="mt-3 text-xs text-muted-foreground">
-                    Last sync: {formatDate(podcast.lastSyncedAt)}. Click to open podcast details.
+                    Last sync: {formatDate(podcast.lastSyncedAt)}. Click to open podcast episodes.
                   </p>
                 </Link>
               );
