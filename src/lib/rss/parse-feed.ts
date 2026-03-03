@@ -3,6 +3,7 @@ import Parser from "rss-parser";
 type ParsedEpisode = {
   guid: string;
   title: string;
+  summary: string | null;
   publishedAt: Date | null;
   audioUrl: string;
   episodeUrl: string;
@@ -13,6 +14,8 @@ type ParsedEpisode = {
 type ParsedFeed = {
   title: string | null;
   description: string | null;
+  author: string | null;
+  category: string | null;
   imageUrl: string | null;
   language: string;
   episodes: ParsedEpisode[];
@@ -30,6 +33,20 @@ type FeedItem = {
   itunesDuration?: string;
   itunesImage?: unknown;
   mediaThumbnail?: unknown;
+  content?: string;
+  contentSnippet?: string;
+  contentEncoded?: string;
+  summary?: string;
+  description?: string;
+};
+
+type FeedMeta = {
+  language?: string;
+  managingEditor?: string;
+  itunes?: {
+    author?: string;
+    category?: unknown;
+  };
 };
 
 const parser = new Parser<unknown, FeedItem>({
@@ -37,14 +54,15 @@ const parser = new Parser<unknown, FeedItem>({
     item: [
       ["itunes:duration", "itunesDuration"],
       ["itunes:image", "itunesImage"],
-      ["media:thumbnail", "mediaThumbnail"]
+      ["media:thumbnail", "mediaThumbnail"],
+      ["content:encoded", "contentEncoded"]
     ]
   }
 });
 
 export async function parseRssFeed(url: string): Promise<ParsedFeed> {
   const feed = await parser.parseURL(url);
-  const feedLanguage = (feed as unknown as { language?: string }).language;
+  const feedMeta = feed as unknown as FeedMeta & Record<string, unknown>;
 
   const episodes = (feed.items ?? [])
     .map((item) => {
@@ -62,6 +80,7 @@ export async function parseRssFeed(url: string): Promise<ParsedFeed> {
       return {
         guid,
         title,
+        summary: extractEpisodeSummary(item),
         publishedAt: publishedAt && !Number.isNaN(publishedAt.getTime()) ? publishedAt : null,
         audioUrl,
         episodeUrl: item.link ?? audioUrl,
@@ -79,8 +98,10 @@ export async function parseRssFeed(url: string): Promise<ParsedFeed> {
   return {
     title: feed.title ?? null,
     description: feed.description ?? null,
+    author: extractFeedAuthor(feedMeta),
+    category: extractFeedCategory(feedMeta),
     imageUrl: typeof feed.image === "object" && feed.image && "url" in feed.image ? String(feed.image.url ?? "") || null : null,
-    language: feedLanguage ?? "en",
+    language: feedMeta.language ?? "en",
     episodes
   };
 }
@@ -117,6 +138,113 @@ function extractEpisodeImageUrl(item: FeedItem): string | null {
     const resolved = resolveImageUrl(candidate);
     if (resolved) {
       return resolved;
+    }
+  }
+
+  return null;
+}
+
+function extractEpisodeSummary(item: FeedItem): string | null {
+  const candidates = [item.contentSnippet, item.summary, item.description, item.contentEncoded, item.content];
+
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== "string") {
+      continue;
+    }
+
+    const normalized = normalizeSummaryText(candidate);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return null;
+}
+
+function normalizeSummaryText(input: string): string | null {
+  const withoutTags = input.replace(/<[^>]+>/g, " ");
+  const withoutEntities = withoutTags
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">");
+  const collapsed = withoutEntities.replace(/\s+/g, " ").trim();
+  return collapsed.length > 0 ? collapsed : null;
+}
+
+function extractFeedAuthor(feed: FeedMeta & Record<string, unknown>): string | null {
+  const candidates = [feed.itunes?.author, feed["itunes:author"], feed.managingEditor];
+
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== "string") {
+      continue;
+    }
+
+    const normalized = candidate.trim();
+    if (normalized.length > 0) {
+      return normalized;
+    }
+  }
+
+  return null;
+}
+
+function extractFeedCategory(feed: FeedMeta & Record<string, unknown>): string | null {
+  const candidates = [feed["itunes:category"], feed.itunes?.category];
+
+  for (const candidate of candidates) {
+    const normalized = resolveCategoryValue(candidate);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return null;
+}
+
+function resolveCategoryValue(value: unknown): string | null {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : null;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const normalized = resolveCategoryValue(item);
+      if (normalized) {
+        return normalized;
+      }
+    }
+    return null;
+  }
+
+  if (typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  const directText = record.text;
+  if (typeof directText === "string" && directText.trim().length > 0) {
+    return directText.trim();
+  }
+
+  const underscoreText = record._;
+  if (typeof underscoreText === "string" && underscoreText.trim().length > 0) {
+    return underscoreText.trim();
+  }
+
+  const attrs = record.$ as Record<string, unknown> | undefined;
+  if (attrs) {
+    const attrText = attrs.text;
+    if (typeof attrText === "string" && attrText.trim().length > 0) {
+      return attrText.trim();
     }
   }
 

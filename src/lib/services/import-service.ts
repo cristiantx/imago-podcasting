@@ -50,6 +50,7 @@ type ImportPreviewPayload = {
   episodes: Array<{
     guid: string;
     title: string;
+    summary: string | null;
     publishedAt: string | null;
     durationSec: number | null;
     episodeUrl: string;
@@ -158,6 +159,7 @@ export async function previewImportFromFeed(input: { clerkUserId: string; rssUrl
       episodes: parsedFeed.episodes.map((episode) => ({
         guid: episode.guid,
         title: episode.title,
+        summary: episode.summary,
         publishedAt: episode.publishedAt ? episode.publishedAt.toISOString() : null,
         durationSec: episode.durationSec,
         episodeUrl: episode.episodeUrl,
@@ -175,12 +177,14 @@ export async function startImportFromFeed(input: ImportRequest): Promise<ImportR
     feedUrl: input.rssUrl,
     title: parsedFeed.title,
     description: parsedFeed.description,
+    author: parsedFeed.author,
+    category: parsedFeed.category,
     imageUrl: parsedFeed.imageUrl,
     language: parsedFeed.language
   });
 
   const existingEpisodes = await db.query.episodes.findMany({
-    columns: { id: true, rssGuid: true, episodeImageUrl: true },
+    columns: { id: true, rssGuid: true, episodeImageUrl: true, summary: true },
     where: eq(episodes.podcastId, podcast.id)
   });
 
@@ -203,6 +207,30 @@ export async function startImportFromFeed(input: ImportRequest): Promise<ImportR
           .update(episodes)
           .set({
             episodeImageUrl: episode.episodeImageUrl,
+            updatedAt: new Date()
+          })
+          .where(eq(episodes.id, existing.id));
+      })
+    );
+  }
+
+  const summaryBackfills = parsedFeed.episodes.filter((episode) => {
+    const existing = existingByGuid.get(episode.guid);
+    return Boolean(existing && !existing.summary && episode.summary);
+  });
+
+  if (summaryBackfills.length > 0) {
+    await Promise.all(
+      summaryBackfills.map(async (episode) => {
+        const existing = existingByGuid.get(episode.guid);
+        if (!existing || !episode.summary) {
+          return;
+        }
+
+        await db
+          .update(episodes)
+          .set({
+            summary: episode.summary,
             updatedAt: new Date()
           })
           .where(eq(episodes.id, existing.id));
@@ -259,6 +287,7 @@ export async function startImportFromFeed(input: ImportRequest): Promise<ImportR
     podcastId: podcast.id,
     rssGuid: episode.guid,
     title: episode.title,
+    summary: episode.summary,
     publishedAt: episode.publishedAt,
     audioUrl: episode.audioUrl,
     episodeUrl: episode.episodeUrl,
@@ -484,6 +513,8 @@ async function upsertPodcast(input: {
   feedUrl: string;
   title: string | null;
   description: string | null;
+  author: string | null;
+  category: string | null;
   imageUrl: string | null;
   language: string;
 }) {
@@ -497,6 +528,8 @@ async function upsertPodcast(input: {
       .set({
         title: input.title,
         description: input.description,
+        author: input.author,
+        category: input.category,
         imageUrl: input.imageUrl,
         language: input.language || "en",
         updatedAt: new Date()
@@ -514,6 +547,8 @@ async function upsertPodcast(input: {
       feedUrl: input.feedUrl,
       title: input.title,
       description: input.description,
+      author: input.author,
+      category: input.category,
       imageUrl: input.imageUrl,
       language: input.language || "en",
       status: "idle"
