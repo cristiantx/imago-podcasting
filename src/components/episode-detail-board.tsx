@@ -1,5 +1,18 @@
 "use client";
 
+import {
+  BadgeCheck,
+  Compass,
+  Download,
+  ExternalLink,
+  Mic,
+  Pause,
+  Play,
+  RotateCcw,
+  RotateCw,
+  Search,
+  Settings
+} from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -270,7 +283,7 @@ export function EpisodeDetailBoard({ podcastId, podcast, episode, segments }: Ep
           <header className="z-20 border-b border-slate-200/80 bg-white/90 px-4 py-4 backdrop-blur md:px-8 lg:px-12">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="relative w-full max-w-xl">
-                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                 <input
                   type="search"
                   value={query}
@@ -285,7 +298,7 @@ export function EpisodeDetailBoard({ podcastId, podcast, episode, segments }: Ep
                   href={`/api/podcasts/${podcastId}/episodes/${episode.id}/transcript/download`}
                   className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary/10 px-4 text-sm font-semibold text-primary transition hover:bg-primary/20"
                 >
-                  <DownloadIcon />
+                  <Download className="h-4 w-4" aria-hidden="true" />
                   Export
                 </a>
                 <button
@@ -294,7 +307,7 @@ export function EpisodeDetailBoard({ podcastId, podcast, episode, segments }: Ep
                   onClick={(event) => event.preventDefault()}
                   aria-label="Settings"
                 >
-                  <SettingsIcon />
+                  <Settings className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -399,7 +412,7 @@ export function EpisodeDetailBoard({ podcastId, podcast, episode, segments }: Ep
               <img src={episode.episodeImageUrl} alt={`${episode.title} cover`} className="h-11 w-11 flex-none rounded-lg object-cover shadow" />
             ) : (
               <div className="grid h-11 w-11 flex-none place-items-center rounded-lg bg-slate-200 text-slate-500">
-                <MicIcon className="h-4 w-4" />
+                <Mic className="h-4 w-4" aria-hidden="true" />
               </div>
             )}
 
@@ -433,7 +446,7 @@ export function EpisodeDetailBoard({ podcastId, podcast, episode, segments }: Ep
                 onClick={() => seekTo(currentTime - 10, true)}
                 aria-label="Back 10 seconds"
               >
-                <ReplayIcon className="h-4 w-4" />
+                <RotateCcw className="h-4 w-4" aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -443,7 +456,11 @@ export function EpisodeDetailBoard({ podcastId, podcast, episode, segments }: Ep
                 }}
                 aria-label={isPlaying ? "Pause" : "Play"}
               >
-                {isPlaying ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-4 w-4" />}
+                {isPlaying ? (
+                  <Pause className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Play className="h-4 w-4" aria-hidden="true" />
+                )}
               </button>
               <button
                 type="button"
@@ -451,7 +468,7 @@ export function EpisodeDetailBoard({ podcastId, podcast, episode, segments }: Ep
                 onClick={() => seekTo(currentTime + 30, true)}
                 aria-label="Forward 30 seconds"
               >
-                <ForwardIcon className="h-4 w-4" />
+                <RotateCw className="h-4 w-4" aria-hidden="true" />
               </button>
               <div className="mx-1 hidden h-6 w-px bg-slate-200 sm:block" />
               <button
@@ -474,7 +491,7 @@ function EpisodeMentionsSidebar({ companies, people, concepts }: { companies: Me
     <aside className="fixed bottom-0 right-0 top-0 z-20 hidden w-80 flex-col border-l border-slate-200 bg-white xl:flex">
       <div className="border-b border-slate-200 bg-slate-50/70 px-6 py-5">
         <div className="mb-1 flex items-center gap-2">
-          <FactCheckIcon className="h-4 w-4 text-primary" />
+          <BadgeCheck className="h-4 w-4 text-primary" aria-hidden="true" />
           <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-slate-900">Mentions</h3>
         </div>
         <p className="text-[11px] text-slate-500">Entities detected in this episode</p>
@@ -504,7 +521,7 @@ function EpisodeMentionsSidebar({ companies, people, concepts }: { companies: Me
           type="button"
           className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-600 transition hover:border-primary/30 hover:text-primary"
         >
-          <ExploreIcon className="h-4 w-4" />
+          <Compass className="h-4 w-4" aria-hidden="true" />
           Explore Related Episodes
         </button>
       </div>
@@ -527,7 +544,7 @@ function MentionSection({ title, items }: { title: string; items: MentionItem[] 
               <div className="min-w-0">
                 <div className="mb-0.5 flex items-center justify-between gap-2">
                   <span className="truncate text-xs font-bold text-slate-900">{item.name}</span>
-                  <OpenIcon className="h-3 w-3 text-slate-300 opacity-0 transition group-hover:opacity-100" />
+                  <ExternalLink className="h-3 w-3 text-slate-300 opacity-0 transition group-hover:opacity-100" aria-hidden="true" />
                 </div>
                 <p className="mb-2 text-[10px] text-slate-500">{item.description}</p>
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -777,109 +794,4 @@ function toTitleCase(value: string) {
     .filter(Boolean)
     .map((token) => token.charAt(0).toUpperCase() + token.slice(1).toLowerCase())
     .join(" ");
-}
-
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className={className}>
-      <circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.6" />
-      <path d="m13.2 13.2 3.6 3.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-      <path d="M10 3.8v8.5m0 0 3.1-3.1M10 12.3 6.9 9.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M4.7 14.5h10.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function SettingsIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-      <path
-        d="M10 6.8a3.2 3.2 0 1 0 0 6.4 3.2 3.2 0 0 0 0-6.4Zm7.2 3.2-1.5.9c0 .3-.2.7-.3 1l.8 1.6-1.6 1.6-1.6-.8a5.5 5.5 0 0 1-1 .4l-.9 1.5H8.9l-.9-1.5a5.5 5.5 0 0 1-1-.4l-1.6.8-1.6-1.6.8-1.6a5.5 5.5 0 0 1-.4-1L2.8 10l1.5-.9c0-.3.2-.7.3-1l-.8-1.6 1.6-1.6 1.6.8c.3-.1.6-.3 1-.4l.9-1.5h2.2l.9 1.5c.4.1.7.3 1 .4l1.6-.8 1.6 1.6-.8 1.6c.1.3.3.7.4 1l1.4.9Z"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function MicIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className={className}>
-      <rect x="7" y="2.7" width="6" height="10" rx="3" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M4.8 9.8a5.2 5.2 0 0 0 10.4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M10 15v2.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M7.6 17.2h4.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ReplayIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className={className}>
-      <path d="M5.4 10.1a4.6 4.6 0 1 1 2 3.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M5.8 6.5v3.4h3.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function ForwardIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className={className}>
-      <path d="M14.6 10.1a4.6 4.6 0 1 0-2 3.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M14.2 6.5v3.4H11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function PlayIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className={className}>
-      <path d="m7.3 5.7 7.2 4.3-7.2 4.3V5.7Z" fill="currentColor" />
-    </svg>
-  );
-}
-
-function PauseIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className={className}>
-      <rect x="6.1" y="5.5" width="2.7" height="9" rx="1" fill="currentColor" />
-      <rect x="11.2" y="5.5" width="2.7" height="9" rx="1" fill="currentColor" />
-    </svg>
-  );
-}
-
-function FactCheckIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className={className}>
-      <rect x="3.2" y="3.8" width="13.6" height="12.4" rx="2" stroke="currentColor" strokeWidth="1.4" />
-      <path d="m6.2 10 2.1 2.1 5.3-5.3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function ExploreIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className={className}>
-      <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.4" />
-      <path d="m8.4 11.6 1-3.2 3.2-1-1 3.2-3.2 1Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function OpenIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className={className}>
-      <path d="M7 13 13 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M8 7h5v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
 }

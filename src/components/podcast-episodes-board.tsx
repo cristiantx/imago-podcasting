@@ -1,5 +1,22 @@
 "use client";
 
+import {
+  ArrowUpRight,
+  BrainCircuit,
+  Calendar,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Clock3,
+  EllipsisVertical,
+  Hourglass,
+  Mic,
+  RefreshCw,
+  Search,
+  Settings,
+  Sparkles,
+  X
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
@@ -214,7 +231,7 @@ export function PodcastEpisodesBoard({ podcastId }: { podcastId: string }) {
                   <span>{podcastCategory}</span>
                   <span className="h-1 w-1 rounded-full bg-slate-300" />
                   <span className="inline-flex items-center gap-1 text-primary">
-                    <RefreshIcon />
+                    <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
                     Updated {formatRelativeDate(episodesData?.podcast.lastSyncedAt ?? null)}
                   </span>
                 </div>
@@ -227,7 +244,7 @@ export function PodcastEpisodesBoard({ podcastId }: { podcastId: string }) {
                 className="inline-flex h-12 items-center gap-2 rounded-full border border-slate-200 bg-white px-6 text-sm font-medium text-slate-800 transition hover:border-primary/30 hover:text-primary"
                 onClick={(event) => event.preventDefault()}
               >
-                <SettingsIcon />
+                <Settings className="h-4 w-4" aria-hidden="true" />
                 Settings
               </button>
             </div>
@@ -238,7 +255,7 @@ export function PodcastEpisodesBoard({ podcastId }: { podcastId: string }) {
           <h3 className="text-lg font-bold text-slate-900">Recent Episodes</h3>
           <button type="button" className="inline-flex items-center gap-1 text-sm font-medium text-slate-700" onClick={(event) => event.preventDefault()}>
             <span className="font-normal text-slate-500">Sort by:</span> Date Added
-            <ChevronDownIcon />
+            <ChevronDown className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -274,7 +291,7 @@ export function PodcastEpisodesBoard({ podcastId }: { podcastId: string }) {
                         <img src={episode.episodeImageUrl} alt={`${episode.title} thumbnail`} className="h-full w-full object-cover" />
                       ) : (
                         <div className="grid h-full w-full place-items-center text-slate-400">
-                          <MicIcon />
+                          <Mic className="h-5 w-5" aria-hidden="true" />
                         </div>
                       )}
                     </div>
@@ -296,7 +313,7 @@ export function PodcastEpisodesBoard({ podcastId }: { podcastId: string }) {
                             }}
                             onKeyDown={(event) => event.stopPropagation()}
                           >
-                            <MoreVerticalIcon />
+                            <EllipsisVertical className="h-4 w-4" aria-hidden="true" />
                           </button>
                           {openMenuEpisodeId === episode.id ? (
                             <div
@@ -343,11 +360,11 @@ export function PodcastEpisodesBoard({ podcastId }: { podcastId: string }) {
 
                       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
                         <span className="inline-flex items-center gap-1.5 text-slate-500">
-                          <ClockIcon />
+                          <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
                           {formatDuration(episode.durationSec)}
                         </span>
                         <span className="inline-flex items-center gap-1.5 text-slate-500">
-                          <CalendarIcon />
+                          <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
                           {formatRelativeDate(episode.publishedAt)}
                         </span>
                         <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
@@ -366,13 +383,13 @@ export function PodcastEpisodesBoard({ podcastId }: { podcastId: string }) {
       <div className="hidden">
         <div className="relative flex h-full flex-col overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-[0_24px_70px_rgba(79,70,229,0.1)]">
           <div className="pointer-events-none absolute right-0 top-0 p-3 opacity-10">
-            <BrainGhostIcon />
+            <BrainCircuit className="h-44 w-44 text-primary" aria-hidden="true" />
           </div>
 
           <div className="relative z-10 border-b border-slate-100 p-7">
             <div className="mb-2 flex items-center gap-3">
               <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                <SparkleIcon />
+                <Sparkles className="h-5 w-5" aria-hidden="true" />
               </div>
               <h3 className="text-lg font-bold text-slate-900">Semantic Insights</h3>
             </div>
@@ -386,7 +403,7 @@ export function PodcastEpisodesBoard({ podcastId }: { podcastId: string }) {
               </label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-primary">
-                  <SearchIcon />
+                  <Search className="h-4 w-4" aria-hidden="true" />
                 </div>
                 <input
                   id="podcast-semantic-search"
@@ -445,7 +462,7 @@ export function PodcastEpisodesBoard({ podcastId }: { podcastId: string }) {
                           rel="noreferrer"
                         >
                           Open
-                          <ArrowUpRightIcon />
+                          <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                         </a>
                       </div>
                     </div>
@@ -490,7 +507,7 @@ export function PodcastEpisodesBoard({ podcastId }: { podcastId: string }) {
                         <p className="text-xs text-slate-500">{entity.mentions}</p>
                       </div>
                     </div>
-                    <ChevronRightIcon />
+                    <ChevronRight className="h-4 w-4 text-slate-300" aria-hidden="true" />
                   </div>
                 ))}
               </div>
@@ -539,7 +556,7 @@ function getEpisodeStatus(episode: EpisodeItem) {
     return {
       label: "Failed",
       iconBadgeClassName: "grid h-7 w-7 place-items-center rounded-full border border-red-200 bg-red-50 text-red-600",
-      icon: <FailedIcon />
+      icon: <X className="h-4 w-4" aria-hidden="true" />
     };
   }
 
@@ -547,7 +564,7 @@ function getEpisodeStatus(episode: EpisodeItem) {
     return {
       label: "Transcribing",
       iconBadgeClassName: "grid h-7 w-7 place-items-center rounded-full border border-amber-200 bg-amber-50 text-amber-600",
-      icon: <HourglassIcon />
+      icon: <Hourglass className="h-4 w-4" aria-hidden="true" />
     };
   }
 
@@ -555,14 +572,14 @@ function getEpisodeStatus(episode: EpisodeItem) {
     return {
       label: "Transcribed",
       iconBadgeClassName: "grid h-7 w-7 place-items-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600",
-      icon: <CheckIcon />
+      icon: <Check className="h-4 w-4" aria-hidden="true" />
     };
   }
 
   return {
     label: "Not transcribed",
     iconBadgeClassName: "grid h-7 w-7 place-items-center rounded-full border border-slate-200 bg-slate-100 text-slate-400",
-    icon: <DotIcon />
+    icon: <span className="inline-block h-2 w-2 rounded-full bg-current" />
   };
 }
 
@@ -668,159 +685,4 @@ async function copyEpisodeDetailUrl(podcastId: string, episodeId: string) {
   } catch {
     // no-op: clipboard can fail in restricted browser contexts
   }
-}
-
-function MicIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5">
-      <rect x="7" y="2.7" width="6" height="10" rx="3" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M4.8 9.8a5.2 5.2 0 0 0 10.4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M10 15v2.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M7.6 17.2h4.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-      <circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.6" />
-      <path d="m13.2 13.2 3.6 3.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function RefreshIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5">
-      <path d="M4.8 10a5.2 5.2 0 0 1 9-3.6m1.4-1.9V8h-3.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M15.2 10a5.2 5.2 0 0 1-9 3.6M3.8 15.5V12h3.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function SettingsIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-      <path
-        d="M10 6.8a3.2 3.2 0 1 0 0 6.4 3.2 3.2 0 0 0 0-6.4Zm7.2 3.2-1.5.9c0 .3-.2.7-.3 1l.8 1.6-1.6 1.6-1.6-.8a5.5 5.5 0 0 1-1 .4l-.9 1.5H8.9l-.9-1.5a5.5 5.5 0 0 1-1-.4l-1.6.8-1.6-1.6.8-1.6a5.5 5.5 0 0 1-.4-1L2.8 10l1.5-.9c0-.3.2-.7.3-1l-.8-1.6 1.6-1.6 1.6.8c.3-.1.6-.3 1-.4l.9-1.5h2.2l.9 1.5c.4.1.7.3 1 .4l1.6-.8 1.6 1.6-.8 1.6c.1.3.3.7.4 1l1.4.9Z"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-      <path d="M10 4.5v11m-5.5-5.5h11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-      <path d="m6 8 4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function SparkleIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5">
-      <path d="M10 2.8 11.8 8l5.2 1.8-5.2 1.8L10 16.8l-1.8-5.2L3 9.8 8.2 8 10 2.8Z" stroke="currentColor" strokeWidth="1.4" />
-    </svg>
-  );
-}
-
-function BrainGhostIcon() {
-  return (
-    <svg viewBox="0 0 220 220" fill="none" className="h-44 w-44 text-primary">
-      <circle cx="110" cy="110" r="82" stroke="currentColor" strokeWidth="14" />
-      <path
-        d="M78 118c0-13 11-24 24-24h16c13 0 24 11 24 24M92 82c0 8-6 14-14 14s-14-6-14-14 6-14 14-14 14 6 14 14Zm64 0c0 8-6 14-14 14s-14-6-14-14 6-14 14-14 14 6 14 14Z"
-        stroke="currentColor"
-        strokeWidth="14"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function ArrowUpRightIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5">
-      <path d="M6.2 13.8 13.8 6.2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M7.2 6.2h6.6v6.6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4 text-slate-300">
-      <path d="m8 5 4 5-4 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function MoreVerticalIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-      <circle cx="10" cy="4.5" r="1.2" fill="currentColor" />
-      <circle cx="10" cy="10" r="1.2" fill="currentColor" />
-      <circle cx="10" cy="15.5" r="1.2" fill="currentColor" />
-    </svg>
-  );
-}
-
-function ClockIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5">
-      <circle cx="10" cy="10" r="6.8" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M10 6.8V10l2.2 1.7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function CalendarIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5">
-      <rect x="3.5" y="4.8" width="13" height="11.7" rx="1.8" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M3.5 8.1h13M7 3.6v2.4m6-2.4v2.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-      <path d="m5.4 10.4 3.1 3.1 6.1-6.4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function HourglassIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-      <path d="M6 3.8h8M6 16.2h8M6.4 4.4c0 2.5 1.3 3.4 3.6 4.8-2.3 1.4-3.6 2.3-3.6 4.8m7.2-9.6c0 2.5-1.3 3.4-3.6 4.8 2.3 1.4 3.6 2.3 3.6 4.8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function DotIcon() {
-  return <span className="inline-block h-2 w-2 rounded-full bg-current" />;
-}
-
-function FailedIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-      <path d="m6.2 6.2 7.6 7.6m0-7.6-7.6 7.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
 }
