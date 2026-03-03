@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
 type EpisodeItem = {
@@ -77,7 +78,8 @@ const TOP_ENTITIES = [
   { name: "Y Combinator", mentions: "Mentioned in 5 episodes", initial: "Y", tone: "orange" }
 ] as const;
 
-export function PodcastDetailBoard({ podcastId }: { podcastId: string }) {
+export function PodcastEpisodesBoard({ podcastId }: { podcastId: string }) {
+  const router = useRouter();
   const [episodesData, setEpisodesData] = useState<EpisodesPayload | null>(null);
   const [loadingEpisodes, setLoadingEpisodes] = useState(true);
   const [episodesError, setEpisodesError] = useState<string | null>(null);
@@ -137,6 +139,10 @@ export function PodcastDetailBoard({ podcastId }: { podcastId: string }) {
     return () => window.removeEventListener("click", onWindowClick);
   }, [openMenuEpisodeId]);
 
+  function openEpisodeDetails(episodeId: string) {
+    router.push(`/podcasts/${podcastId}/episodes/${episodeId}`);
+  }
+
   async function onSearchSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -183,7 +189,7 @@ export function PodcastDetailBoard({ podcastId }: { podcastId: string }) {
 
   return (
     <section className="page-transition grid grid-cols-12 gap-8 pb-10">
-      <div className="col-span-12 space-y-6 xl:col-span-7">
+      <div className="col-span-12 space-y-6">
         <div className="pt-1">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
@@ -224,14 +230,6 @@ export function PodcastDetailBoard({ podcastId }: { podcastId: string }) {
                 <SettingsIcon />
                 Settings
               </button>
-              <button
-                type="button"
-                className="inline-flex h-12 items-center gap-2 rounded-full bg-gradient-to-r from-[#8c2bee] to-[#a855f7] px-6 text-sm font-medium text-white shadow-[0_10px_24px_rgba(140,43,238,0.3)] transition hover:brightness-105"
-                onClick={(event) => event.preventDefault()}
-              >
-                <PlusIcon />
-                New Episode
-              </button>
             </div>
           </div>
         </div>
@@ -258,17 +256,14 @@ export function PodcastDetailBoard({ podcastId }: { podcastId: string }) {
               return (
                 <article
                   key={episode.id}
-                  className={`group relative overflow-visible rounded-3xl border border-slate-100 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] transition hover:shadow-[0_20px_45px_rgba(15,23,42,0.1)] ${
-                    episode.episodeUrl ? "cursor-pointer" : "cursor-default"
-                  }`}
-                  role={episode.episodeUrl ? "link" : undefined}
-                  tabIndex={episode.episodeUrl ? 0 : -1}
-                  onClick={() => openEpisodeDetails(episode.episodeUrl)}
+                  className="group relative overflow-visible rounded-3xl border border-slate-100 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] transition hover:cursor-pointer hover:shadow-[0_20px_45px_rgba(15,23,42,0.1)]"
+                  role="link"
+                  tabIndex={0}
+                  onClick={() => openEpisodeDetails(episode.id)}
                   onKeyDown={(event) => {
-                    if (!episode.episodeUrl) return;
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
-                      openEpisodeDetails(episode.episodeUrl);
+                      openEpisodeDetails(episode.id);
                     }
                   }}
                 >
@@ -312,7 +307,7 @@ export function PodcastDetailBoard({ podcastId }: { podcastId: string }) {
                                 type="button"
                                 className="flex w-full items-center rounded-lg px-2.5 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100"
                                 onClick={() => {
-                                  openEpisodeDetails(episode.episodeUrl);
+                                  openEpisodeDetails(episode.id);
                                   setOpenMenuEpisodeId(null);
                                 }}
                               >
@@ -322,11 +317,11 @@ export function PodcastDetailBoard({ podcastId }: { podcastId: string }) {
                                 type="button"
                                 className="flex w-full items-center rounded-lg px-2.5 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100"
                                 onClick={() => {
-                                  void copyEpisodeUrl(episode.episodeUrl);
+                                  void copyEpisodeDetailUrl(podcastId, episode.id);
                                   setOpenMenuEpisodeId(null);
                                 }}
                               >
-                                Copy episode link
+                                Copy detail page link
                               </button>
                               {episode.isTranscribed ? (
                                 <a
@@ -368,7 +363,7 @@ export function PodcastDetailBoard({ podcastId }: { podcastId: string }) {
         ) : null}
       </div>
 
-      <div className="col-span-12 h-full xl:col-span-5">
+      <div className="hidden">
         <div className="relative flex h-full flex-col overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-[0_24px_70px_rgba(79,70,229,0.1)]">
           <div className="pointer-events-none absolute right-0 top-0 p-3 opacity-10">
             <BrainGhostIcon />
@@ -667,21 +662,9 @@ function formatEpisodeSummary(summary: string | null) {
   return `${normalized.slice(0, 250).trimEnd()}...`;
 }
 
-function openEpisodeDetails(url: string | null) {
-  if (!url) {
-    return;
-  }
-
-  window.open(url, "_blank", "noopener,noreferrer");
-}
-
-async function copyEpisodeUrl(url: string | null) {
-  if (!url) {
-    return;
-  }
-
+async function copyEpisodeDetailUrl(podcastId: string, episodeId: string) {
   try {
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(`${window.location.origin}/podcasts/${podcastId}/episodes/${episodeId}`);
   } catch {
     // no-op: clipboard can fail in restricted browser contexts
   }

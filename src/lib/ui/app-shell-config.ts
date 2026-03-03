@@ -40,6 +40,7 @@ const HEADER_BY_PATH: Record<string, AppHeaderConfig> = {
 };
 
 const PODCAST_DETAIL_PATH = /^\/podcasts\/[^/]+$/;
+const EPISODE_DETAIL_PATH = /^\/podcasts\/[^/]+\/episodes\/[^/]+$/;
 
 export const APP_SHELL_NAV_ITEMS: AppShellNavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "dashboard", match: "exact" },
@@ -57,6 +58,14 @@ export function normalizePathname(pathname: string) {
 
 export function resolveAppHeaderConfig(pathname: string): AppHeaderConfig {
   const normalizedPath = normalizePathname(pathname);
+
+  if (EPISODE_DETAIL_PATH.test(normalizedPath)) {
+    return {
+      title: "Episode Transcript",
+      subtitle: "Read and listen in sync",
+      showShellHeader: false
+    };
+  }
 
   if (PODCAST_DETAIL_PATH.test(normalizedPath)) {
     return {

@@ -11,10 +11,17 @@ describe("app shell config", () => {
     expect(searchHeader.title).toBe("Semantic Search");
   });
 
-  it("resolves podcast details header for dynamic routes", () => {
+  it("resolves podcast episodes header for dynamic routes", () => {
     const header = resolveAppHeaderConfig("/podcasts/abc-123");
 
     expect(header.title).toBe("Podcast Episodes");
+  });
+
+  it("hides shell header for episode details dynamic route", () => {
+    const header = resolveAppHeaderConfig("/podcasts/abc-123/episodes/def-456");
+
+    expect(header.title).toBe("Episode Transcript");
+    expect(header.showShellHeader).toBe(false);
   });
 
   it("normalizes trailing slashes", () => {

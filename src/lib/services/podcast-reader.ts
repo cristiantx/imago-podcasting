@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
 import { episodes, ingestJobs, podcasts, transcriptSegments } from "@/lib/db/schema";
@@ -130,6 +130,62 @@ export async function getPodcastEpisodesForUser(input: { clerkUserId: string; po
         isTranscribed: segmentCount > 0
       };
     })
+  };
+}
+
+export async function getEpisodeDetailForUser(input: { clerkUserId: string; podcastId: string; episodeId: string }) {
+  const podcast = await db.query.podcasts.findFirst({
+    columns: {
+      id: true,
+      title: true,
+      author: true,
+      category: true,
+      imageUrl: true
+    },
+    where: and(eq(podcasts.id, input.podcastId), eq(podcasts.clerkUserId, input.clerkUserId))
+  });
+
+  if (!podcast) {
+    throw new Error("Podcast not found");
+  }
+
+  const episode = await db.query.episodes.findFirst({
+    columns: {
+      id: true,
+      podcastId: true,
+      title: true,
+      summary: true,
+      publishedAt: true,
+      audioUrl: true,
+      audioBlobUrl: true,
+      episodeImageUrl: true,
+      durationSec: true,
+      status: true
+    },
+    where: and(eq(episodes.id, input.episodeId), eq(episodes.podcastId, podcast.id))
+  });
+
+  if (!episode) {
+    throw new Error("Episode not found");
+  }
+
+  const segments = await db.query.transcriptSegments.findMany({
+    columns: {
+      id: true,
+      speakerLabel: true,
+      startMs: true,
+      endMs: true,
+      text: true,
+      chunkIndex: true
+    },
+    where: eq(transcriptSegments.episodeId, episode.id),
+    orderBy: [asc(transcriptSegments.chunkIndex)]
+  });
+
+  return {
+    podcast,
+    episode,
+    segments
   };
 }
 
