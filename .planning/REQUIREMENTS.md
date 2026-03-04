@@ -79,31 +79,31 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| WORK-01 | TBD | Pending |
-| WORK-02 | TBD | Pending |
-| WORK-03 | TBD | Pending |
-| INGT-01 | TBD | Pending |
-| INGT-02 | TBD | Pending |
-| INGT-03 | TBD | Pending |
-| INGT-04 | TBD | Pending |
-| SRCH-01 | TBD | Pending |
-| SRCH-02 | TBD | Pending |
-| SRCH-03 | TBD | Pending |
-| SRCH-04 | TBD | Pending |
-| SRCH-05 | TBD | Pending |
-| SECU-01 | TBD | Pending |
-| SECU-02 | TBD | Pending |
-| SECU-03 | TBD | Pending |
-| ENTL-01 | TBD | Pending |
-| ENTL-02 | TBD | Pending |
-| ENTL-03 | TBD | Pending |
-| INSG-01 | TBD | Pending |
-| INSG-02 | TBD | Pending |
+| WORK-01 | Phase 2 | Pending |
+| WORK-02 | Phase 2 | Pending |
+| WORK-03 | Phase 2 | Pending |
+| INGT-01 | Phase 3 | Pending |
+| INGT-02 | Phase 3 | Pending |
+| INGT-03 | Phase 3 | Pending |
+| INGT-04 | Phase 3 | Pending |
+| SRCH-01 | Phase 4 | Pending |
+| SRCH-02 | Phase 4 | Pending |
+| SRCH-03 | Phase 4 | Pending |
+| SRCH-04 | Phase 4 | Pending |
+| SRCH-05 | Phase 4 | Pending |
+| SECU-01 | Phase 1 | Pending |
+| SECU-02 | Phase 1 | Pending |
+| SECU-03 | Phase 1 | Pending |
+| ENTL-01 | Phase 5 | Pending |
+| ENTL-02 | Phase 5 | Pending |
+| ENTL-03 | Phase 5 | Pending |
+| INSG-01 | Phase 6 | Pending |
+| INSG-02 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 20 total
-- Mapped to phases: 0
-- Unmapped: 20 ⚠️
+- Mapped to phases: 20
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-03*
