@@ -383,7 +383,15 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
             </div>
 
             <div className="lg:col-start-2">
-              <SearchPreviewRail result={activeResult} submittedQuery={submittedQuery} />
+              <SearchPreviewRail
+                result={activeResult}
+                submittedQuery={submittedQuery}
+                copyFeedback={activeResult ? actionFeedback[`${activeResult.episodeId}:copy`] ?? "Copy Quote" : undefined}
+                shareFeedback={activeResult ? actionFeedback[`${activeResult.episodeId}:share`] ?? "Share" : undefined}
+                onCopyQuote={activeResult ? () => void onCopyQuote(activeResult) : undefined}
+                onShareResult={activeResult ? () => void onShareResult(activeResult) : undefined}
+                emptyState={filteredResults.length === 0 ? "no-results" : "idle"}
+              />
             </div>
           </div>
         ) : null}

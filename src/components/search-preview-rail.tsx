@@ -11,9 +11,23 @@ type SearchPreviewRailProps = {
   result: SemanticSearchResult | null;
   submittedQuery: string;
   variant?: "rail" | "inline";
+  copyFeedback?: string;
+  shareFeedback?: string;
+  onCopyQuote?: () => void;
+  onShareResult?: () => void;
+  emptyState?: "idle" | "no-results";
 };
 
-export function SearchPreviewRail({ result, submittedQuery, variant = "rail" }: SearchPreviewRailProps) {
+export function SearchPreviewRail({
+  result,
+  submittedQuery,
+  variant = "rail",
+  copyFeedback,
+  shareFeedback,
+  onCopyQuote,
+  onShareResult,
+  emptyState = "idle"
+}: SearchPreviewRailProps) {
   const wrapperClassName =
     variant === "rail" ? "hidden lg:block lg:sticky lg:top-6" : "lg:hidden";
   const titleId = useId();
@@ -61,28 +75,54 @@ export function SearchPreviewRail({ result, submittedQuery, variant = "rail" }: 
               <p className="text-[15px] leading-7 text-slate-700">{result.snippet}</p>
 
               <div className="rounded-[24px] border border-slate-200/80 bg-white/90 px-4 py-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Jump Action</p>
-                <div className="mt-2 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">Go straight to the matched moment</p>
-                    <p className="text-sm text-slate-500">
-                      Start at <span className="font-semibold text-slate-900">{formatTime(result.startSec)}</span> in this episode.
-                    </p>
-                  </div>
-
-                  <Link
-                    href={result.episodeHref}
-                    aria-label={`Jump to ${result.episodeTitle} at ${formatTime(result.startSec)}`}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-[0_16px_32px_rgba(140,43,238,0.26)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Confidence Layer</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={onCopyQuote}
+                    aria-label={`Copy quote from ${result.episodeTitle}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-primary/35 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
                   >
-                    Jump to {formatTime(result.startSec)}
-                    <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
+                    <span aria-live="polite" aria-atomic="true">
+                      {copyFeedback ?? "Copy Quote"}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={onShareResult}
+                    aria-label={`Share ${result.episodeTitle}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-primary/35 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
+                  >
+                    <span aria-live="polite" aria-atomic="true">
+                      {shareFeedback ?? "Share"}
+                    </span>
+                  </button>
+                </div>
+
+                <div className="mt-4 border-t border-slate-100 pt-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">Go straight to the matched moment</p>
+                      <p className="text-sm text-slate-500">
+                        Start at <span className="font-semibold text-slate-900">{formatTime(result.startSec)}</span> in this episode.
+                      </p>
+                    </div>
+
+                    <Link
+                      href={result.episodeHref}
+                      aria-label={`Jump to ${result.episodeTitle} at ${formatTime(result.startSec)}`}
+                      className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-[0_16px_32px_rgba(140,43,238,0.26)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
+                    >
+                      Jump to {formatTime(result.startSec)}
+                      <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </>
           ) : (
-            <NullPreviewState />
+            <NullPreviewState state={emptyState} submittedQuery={submittedQuery} />
           )}
         </div>
       </div>
@@ -140,7 +180,28 @@ function PlayerShell({ result }: { result: SemanticSearchResult | null }) {
   );
 }
 
-function NullPreviewState() {
+function NullPreviewState({ state, submittedQuery }: { state: "idle" | "no-results"; submittedQuery: string }) {
+  if (state === "no-results") {
+    return (
+      <div className="space-y-4 rounded-[24px] border border-dashed border-slate-300/80 bg-white/75 px-5 py-8 text-center">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-[18px] bg-[radial-gradient(circle_at_28%_25%,#e2e8f0,#94a3b8)] text-white shadow-[0_18px_36px_rgba(15,23,42,0.12)]">
+          <Podcast className="h-6 w-6" aria-hidden="true" />
+        </div>
+
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold text-slate-900">No transcript moments matched this search</h3>
+          <p className="mx-auto max-w-md text-sm leading-6 text-slate-500">
+            Try broadening <span className="font-semibold text-slate-700">&quot;{submittedQuery}&quot;</span>, removing filters, or searching all podcasts.
+          </p>
+        </div>
+
+        <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-500">
+          Refine search
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 rounded-[24px] border border-dashed border-slate-300/80 bg-white/75 px-5 py-8 text-center">
       <div className="mx-auto grid h-14 w-14 place-items-center rounded-[18px] bg-[radial-gradient(circle_at_28%_25%,#e2e8f0,#94a3b8)] text-white shadow-[0_18px_36px_rgba(15,23,42,0.12)]">

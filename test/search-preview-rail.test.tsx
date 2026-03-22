@@ -26,7 +26,9 @@ describe("SearchPreviewRail", () => {
     const markup = renderToStaticMarkup(
       React.createElement(SearchPreviewRail, {
         result,
-        submittedQuery: "selectable cards"
+        submittedQuery: "selectable cards",
+        copyFeedback: "Copied",
+        shareFeedback: "Shared"
       })
     );
 
@@ -35,6 +37,11 @@ describe("SearchPreviewRail", () => {
     expect(markup).toContain("Selectable cards should stay readable and easy to navigate.");
     expect(markup).toContain(result.episodeHref);
     expect(markup).toContain('aria-label="Jump to Extracting Selectable Cards at 0:42"');
+    expect(markup).toContain("Confidence Layer");
+    expect(markup).toContain('aria-label="Copy quote from Extracting Selectable Cards"');
+    expect(markup).toContain('aria-label="Share Extracting Selectable Cards"');
+    expect(markup).toContain("Copied");
+    expect(markup).toContain("Shared");
   });
 
   it("uses a unique labeled region for each preview rail instance", () => {
@@ -72,5 +79,19 @@ describe("SearchPreviewRail", () => {
 
     expect(markup).toContain("Select a result to preview it here");
     expect(markup).toContain("Jump to episode");
+  });
+
+  it("renders no-results messaging instead of the generic null state", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(SearchPreviewRail, {
+        result: null,
+        submittedQuery: "selectable cards",
+        emptyState: "no-results"
+      })
+    );
+
+    expect(markup).toContain("No transcript moments matched this search");
+    expect(markup).toContain("Refine search");
+    expect(markup).not.toContain("Select a result to preview it here");
   });
 });

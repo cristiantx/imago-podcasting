@@ -31,17 +31,22 @@ export function SearchResultsColumn({
   onShareResult
 }: SearchResultsColumnProps) {
   return (
-    <div className="space-y-4">
-      {results.map((result) => {
+    <div className="flex flex-col gap-4">
+      {results.map((result, index) => {
         const copyFeedback = actionFeedback[`${result.episodeId}:copy`] ?? "Copy Quote";
         const shareFeedback = actionFeedback[`${result.episodeId}:share`] ?? "Share";
         const isActiveResult =
           activeResult !== null &&
           activeResult.episodeId === result.episodeId &&
           activeResult.startSec === result.startSec;
+        const mobileOrder = isActiveResult ? 0 : index + 1;
 
         return (
-          <Fragment key={getSearchResultKey(result)}>
+          <div
+            key={getSearchResultKey(result)}
+            className="flex flex-col gap-4 order-[var(--result-order)] lg:order-none"
+            style={{ "--result-order": mobileOrder } as React.CSSProperties}
+          >
             <SearchResultCard
               result={result}
               submittedQuery={submittedQuery}
@@ -62,10 +67,22 @@ export function SearchResultsColumn({
 
             {isActiveResult ? (
               <div className={cn("pt-2 lg:hidden")}>
-                <SearchPreviewRail result={activeResult} submittedQuery={submittedQuery} variant="inline" />
+                <SearchPreviewRail
+                  result={activeResult}
+                  submittedQuery={submittedQuery}
+                  variant="inline"
+                  copyFeedback={copyFeedback}
+                  shareFeedback={shareFeedback}
+                  onCopyQuote={() => {
+                    onCopyQuote(result);
+                  }}
+                  onShareResult={() => {
+                    onShareResult(result);
+                  }}
+                />
               </div>
             ) : null}
-          </Fragment>
+          </div>
         );
       })}
 

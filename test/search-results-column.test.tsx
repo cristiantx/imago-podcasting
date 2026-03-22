@@ -38,11 +38,11 @@ const secondResult: SemanticSearchResult = {
 };
 
 describe("SearchResultsColumn", () => {
-  it("renders the inline preview directly after the selected card", () => {
+  it("renders the selected result as the first mobile item", () => {
     const markup = renderToStaticMarkup(
       React.createElement(SearchResultsColumn, {
         results: [firstResult, secondResult],
-        activeResult: firstResult,
+        activeResult: secondResult,
         submittedQuery: "selectable cards",
         actionFeedback: {},
         canLoadMore: false,
@@ -53,12 +53,10 @@ describe("SearchResultsColumn", () => {
       })
     );
 
-    const selectedIndex = markup.indexOf("Selected Result");
-    const previewIndex = markup.indexOf("Jump to 0:42");
-    const nextResultIndex = markup.indexOf("Next Result");
-
-    expect(selectedIndex).toBeGreaterThan(-1);
-    expect(previewIndex).toBeGreaterThan(selectedIndex);
-    expect(nextResultIndex).toBeGreaterThan(previewIndex);
+    expect(markup).toContain('style="--result-order:0"');
+    expect(markup).toContain('style="--result-order:1"');
+    expect(markup).toContain("Jump to 1:30");
+    expect(markup).toContain("Selected Result");
+    expect(markup).toContain("Next Result");
   });
 });
