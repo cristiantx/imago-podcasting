@@ -229,6 +229,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
                 <button
                   type="button"
                   onClick={onAllPodcastsClick}
+                  aria-pressed={selectedPodcastIds.length === 0}
                   className={cn(
                     "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2",
                     selectedPodcastIds.length === 0
@@ -247,6 +248,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
                       key={podcast.id}
                       type="button"
                       onClick={() => onPodcastToggle(podcast.id)}
+                      aria-pressed={active}
                       className={cn(
                         "inline-flex items-center gap-2 rounded-full border px-2.5 py-2 pr-4 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2",
                         active
@@ -340,7 +342,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
           />
         ) : null}
 
-        {podcasts.length > 0 && !hasCompletedSearch ? (
+        {podcasts.length > 0 && !hasCompletedSearch && !loading ? (
           <EmptyState
             title="Search transcripts to surface matched moments"
             description="Use natural language, exact phrases, or audience problems to surface the strongest episode clips."

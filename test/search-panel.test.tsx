@@ -20,5 +20,6 @@ describe("SearchPanel", () => {
     );
 
     expect(markup).toContain('aria-label="Search transcripts"');
+    expect(markup).toContain('aria-pressed="true"');
   });
 });
