@@ -41,5 +41,8 @@ describe("SearchResultCard", () => {
     expect(markup).not.toContain('role="button"');
     expect(markup).toContain("Extracting Selectable Cards");
     expect(markup).toContain("Go to Episode");
+    expect(markup).toContain('aria-label="Copy quote from Extracting Selectable Cards"');
+    expect(markup).toContain('aria-label="Share Extracting Selectable Cards"');
+    expect(markup).toContain('aria-label="Go to Extracting Selectable Cards at 0:42"');
   });
 });

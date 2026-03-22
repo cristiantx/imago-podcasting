@@ -53,6 +53,7 @@ export function SearchResultCard({
       <button
         type="button"
         aria-pressed={selected}
+        aria-label={`Select ${result.episodeTitle} for preview`}
         onClick={onSelect}
         className="block w-full cursor-pointer rounded-none text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-inset"
       >
@@ -99,29 +100,36 @@ export function SearchResultCard({
         <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
           <button
             type="button"
+            aria-label={`Copy quote from ${result.episodeTitle}`}
             onClick={() => {
               onCopyQuote();
             }}
-            className="inline-flex items-center gap-1.5 font-medium transition hover:text-primary"
+            className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 font-medium transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
           >
             <Copy className="h-4 w-4" aria-hidden="true" />
-            {copyFeedback}
+            <span aria-live="polite" aria-atomic="true">
+              {copyFeedback}
+            </span>
           </button>
           <button
             type="button"
+            aria-label={`Share ${result.episodeTitle}`}
             onClick={() => {
               onShareResult();
             }}
-            className="inline-flex items-center gap-1.5 font-medium transition hover:text-primary"
+            className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 font-medium transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
           >
             <Share2 className="h-4 w-4" aria-hidden="true" />
-            {shareFeedback}
+            <span aria-live="polite" aria-atomic="true">
+              {shareFeedback}
+            </span>
           </button>
         </div>
 
         <Link
           href={result.episodeHref}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-[0_16px_32px_rgba(140,43,238,0.26)] transition hover:brightness-105 sm:w-auto"
+          aria-label={`Go to ${result.episodeTitle} at ${startLabel}`}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-[0_16px_32px_rgba(140,43,238,0.26)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 sm:w-auto"
         >
           Go to Episode
           <span aria-hidden="true">-</span>

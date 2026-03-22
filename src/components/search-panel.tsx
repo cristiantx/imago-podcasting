@@ -230,7 +230,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
                   type="button"
                   onClick={onAllPodcastsClick}
                   className={cn(
-                    "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition",
+                    "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2",
                     selectedPodcastIds.length === 0
                       ? "border-primary bg-primary text-white shadow-[0_10px_30px_rgba(140,43,238,0.22)]"
                       : "border-slate-200 bg-white/90 text-slate-700 hover:border-primary/35 hover:text-primary"
@@ -248,7 +248,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
                       type="button"
                       onClick={() => onPodcastToggle(podcast.id)}
                       className={cn(
-                        "inline-flex items-center gap-2 rounded-full border px-2.5 py-2 pr-4 text-sm font-medium transition",
+                        "inline-flex items-center gap-2 rounded-full border px-2.5 py-2 pr-4 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2",
                         active
                           ? "border-primary/25 bg-primary/10 text-primary shadow-[0_10px_25px_rgba(140,43,238,0.12)]"
                           : "border-slate-200 bg-white/90 text-slate-700 hover:border-primary/30 hover:text-primary"
@@ -276,7 +276,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search concepts, topics, and exact phrases across your transcript archive."
-                  className="h-16 w-full rounded-[24px] bg-transparent pl-14 pr-36 text-base text-slate-900 outline-none placeholder:text-slate-400 sm:text-lg"
+                  className="h-16 w-full rounded-[24px] bg-transparent pl-14 pr-36 text-base text-slate-900 outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-inset sm:text-lg"
                   disabled={podcasts.length === 0}
                 />
                 <Button
@@ -301,34 +301,47 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
       </div>
 
       {error ? (
-        <div className="rounded-[24px] border border-destructive/30 bg-destructive/5 px-5 py-4 text-sm text-destructive">
+        <div className="rounded-[24px] border border-destructive/30 bg-destructive/5 px-5 py-4 text-sm text-destructive" role="alert">
           {error}
         </div>
       ) : null}
 
       <div className="space-y-5">
-        {hasSubmittedSearch ? (
-          <div className="rounded-[28px] border border-white/80 bg-white/90 px-5 py-4 shadow-[0_18px_45px_rgba(15,23,42,0.06)] sm:px-6">
+        {hasSubmittedSearch || loading ? (
+          <div
+            className="min-h-[4.5rem] rounded-[28px] border border-white/80 bg-white/90 px-5 py-4 shadow-[0_18px_45px_rgba(15,23,42,0.06)] sm:px-6"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             <div className="space-y-1">
-              <p className="text-sm text-slate-500">
-                Found <span className="font-semibold text-slate-900">{filteredResults.length}</span> results for{" "}
-                <span className="font-semibold text-slate-900">&quot;{submittedQuery}&quot;</span>
-              </p>
-              {loading ? <p className="text-xs font-medium text-primary">Refreshing results…</p> : null}
+              {loading ? (
+                <>
+                  <p className="text-sm text-slate-500">
+                    Searching transcripts for <span className="font-semibold text-slate-900">&quot;{submittedQuery || query.trim()}&quot;</span>
+                  </p>
+                  <p className="text-xs font-medium text-primary">Keeping the current results visible while we refresh matches.</p>
+                </>
+              ) : (
+                <p className="text-sm text-slate-500">
+                  Found <span className="font-semibold text-slate-900">{filteredResults.length}</span> results for{" "}
+                  <span className="font-semibold text-slate-900">&quot;{submittedQuery}&quot;</span>
+                </p>
+              )}
             </div>
           </div>
         ) : null}
 
         {podcasts.length === 0 ? (
           <EmptyState
-            title="No podcasts imported yet"
-            description="Add a feed from the workspace sidebar, then come back here to search your transcript archive by meaning."
+            title="Import a podcast to start searching"
+            description="Add a feed from the workspace sidebar, then search transcript moments by topic, phrase, or listener question."
           />
         ) : null}
 
         {podcasts.length > 0 && !hasSubmittedSearch ? (
           <EmptyState
-            title="Run a query to view matched transcript moments"
+            title="Search transcripts to surface matched moments"
             description="Use natural language, exact phrases, or audience problems to surface the strongest episode clips."
           />
         ) : null}
@@ -338,10 +351,10 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
             <div className="space-y-4 lg:col-start-1">
               {filteredResults.length === 0 ? (
                 <EmptyState
-                  title="No semantic matches found"
-                  description="Try broadening the query or switching the search scope to all podcasts."
+                  title="No transcript moments matched this search"
+                  description="Try a broader phrase, remove filters, or switch the scope back to all podcasts."
                 />
-                ) : null}
+              ) : null}
 
               {visibleResults.length > 0 ? (
                 <SearchResultsColumn

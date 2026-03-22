@@ -18,7 +18,7 @@ export function SearchPreviewRail({ result, submittedQuery, variant = "rail" }: 
     variant === "rail" ? "hidden lg:block lg:sticky lg:top-6" : "lg:hidden";
 
   return (
-    <aside className={wrapperClassName}>
+    <aside className={wrapperClassName} aria-labelledby="search-preview-rail-title">
       <div
         className={cn(
           "overflow-hidden rounded-[30px] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(247,244,255,0.98)_100%)] shadow-[0_24px_70px_rgba(15,23,42,0.08)]",
@@ -26,7 +26,10 @@ export function SearchPreviewRail({ result, submittedQuery, variant = "rail" }: 
         )}
       >
         <div className="border-b border-white/70 px-5 py-4 sm:px-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+          <div
+            id="search-preview-rail-title"
+            className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary"
+          >
             <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
             Preview Rail
           </div>
@@ -68,7 +71,8 @@ export function SearchPreviewRail({ result, submittedQuery, variant = "rail" }: 
 
                   <Link
                     href={result.episodeHref}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-[0_16px_32px_rgba(140,43,238,0.26)] transition hover:brightness-105"
+                    aria-label={`Jump to ${result.episodeTitle} at ${formatTime(result.startSec)}`}
+                    className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-[0_16px_32px_rgba(140,43,238,0.26)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
                   >
                     Jump to {formatTime(result.startSec)}
                     <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
@@ -87,9 +91,15 @@ export function SearchPreviewRail({ result, submittedQuery, variant = "rail" }: 
 
 function PlayerShell({ result }: { result: SemanticSearchResult | null }) {
   const hasSelection = result !== null;
+  const statusLabel = hasSelection ? "Selected result preview" : "Preview awaiting a result";
 
   return (
-    <div className="overflow-hidden rounded-[26px] border border-slate-200/80 bg-slate-950 px-4 py-4 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+    <div
+      className="overflow-hidden rounded-[26px] border border-slate-200/80 bg-slate-950 px-4 py-4 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+      role="status"
+      aria-live="polite"
+      aria-label={statusLabel}
+    >
       <div className="flex items-start gap-4">
         <div
           className={cn(
@@ -139,7 +149,7 @@ function NullPreviewState() {
       <div className="space-y-2">
         <h3 className="text-lg font-semibold text-slate-900">Select a result to preview it here</h3>
         <p className="mx-auto max-w-md text-sm leading-6 text-slate-500">
-          The preview rail keeps a player-style summary, timestamp, and jump link ready for the currently selected result.
+          The preview rail keeps the active moment, timestamp, and jump action pinned together for the selected result.
         </p>
       </div>
 

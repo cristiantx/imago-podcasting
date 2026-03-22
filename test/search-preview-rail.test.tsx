@@ -34,6 +34,7 @@ describe("SearchPreviewRail", () => {
     expect(markup).toContain("Host");
     expect(markup).toContain("Selectable cards should stay readable and easy to navigate.");
     expect(markup).toContain(result.episodeHref);
+    expect(markup).toContain('aria-label="Jump to Extracting Selectable Cards at 0:42"');
   });
 
   it("renders a null-state preview when no result is selected", () => {
