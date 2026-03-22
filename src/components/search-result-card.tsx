@@ -2,7 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import type { KeyboardEvent } from "react";
 import { ArrowUpRight, Copy, Share2, Sparkles } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -33,29 +32,13 @@ export function SearchResultCard({
 }: SearchResultCardProps) {
   const scorePercent = formatSearchScorePercent(result.score);
 
-  function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
-    if (event.target !== event.currentTarget) {
-      return;
-    }
-
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onSelect();
-    }
-  }
-
   return (
     <article
-      role="button"
-      tabIndex={0}
-      aria-pressed={selected}
-      onClick={onSelect}
-      onKeyDown={handleKeyDown}
       className={cn(
-        "group relative cursor-pointer overflow-hidden rounded-[30px] border p-6 shadow-[0_24px_64px_rgba(15,23,42,0.08)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:p-7",
+        "group relative overflow-hidden rounded-[30px] border p-6 shadow-[0_24px_64px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_30px_70px_rgba(15,23,42,0.12)] sm:p-7",
         selected
           ? "border-primary/30 bg-white shadow-[0_28px_72px_rgba(140,43,238,0.12)]"
-          : "border-white/80 bg-white/95 hover:-translate-y-0.5 hover:shadow-[0_30px_70px_rgba(15,23,42,0.12)]"
+          : "border-white/80 bg-white/95"
       )}
     >
       <span
@@ -65,50 +48,56 @@ export function SearchResultCard({
         )}
       />
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-center gap-4">
-          <PodcastResultAvatar result={result} />
-          <div className="min-w-0">
-            <h3 className="truncate text-lg font-bold text-slate-900 sm:text-xl">{result.episodeTitle}</h3>
-            <p className="mt-1 text-sm font-medium text-slate-500">
-              {result.podcastTitle}
-              {result.publishedAt ? ` • ${formatPublishedAt(result.publishedAt)}` : ""}
-            </p>
+      <button
+        type="button"
+        aria-pressed={selected}
+        onClick={onSelect}
+        className="block w-full cursor-pointer rounded-none text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-inset"
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <PodcastResultAvatar result={result} />
+            <div className="min-w-0">
+              <h3 className="truncate text-lg font-bold text-slate-900 sm:text-xl">{result.episodeTitle}</h3>
+              <p className="mt-1 text-sm font-medium text-slate-500">
+                {result.podcastTitle}
+                {result.publishedAt ? ` • ${formatPublishedAt(result.publishedAt)}` : ""}
+              </p>
+            </div>
+          </div>
+
+          <div
+            className={cn(
+              "inline-flex h-fit items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold shadow-sm",
+              scorePercent >= 95 ? "border-primary/20 bg-primary/10 text-primary" : "border-primary/10 bg-primary/5 text-primary/80"
+            )}
+          >
+            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+            {scorePercent}% Match
           </div>
         </div>
 
-        <div
-          className={cn(
-            "inline-flex h-fit items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold shadow-sm",
-            scorePercent >= 95 ? "border-primary/20 bg-primary/10 text-primary" : "border-primary/10 bg-primary/5 text-primary/80"
+        <p className="mt-6 text-[15px] leading-7 text-slate-700 sm:text-base">
+          {getHighlightTokens(result.snippet, submittedQuery).map((token, tokenIndex) =>
+            token.highlighted ? (
+              <span
+                key={`${result.episodeId}-${tokenIndex}`}
+                className="mx-[1px] rounded-md bg-primary/10 px-1.5 py-0.5 font-semibold text-primary shadow-[inset_0_0_0_1px_rgba(140,43,238,0.12)]"
+              >
+                {token.text}
+              </span>
+            ) : (
+              <span key={`${result.episodeId}-${tokenIndex}`}>{token.text}</span>
+            )
           )}
-        >
-          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-          {scorePercent}% Match
-        </div>
-      </div>
-
-      <p className="mt-6 text-[15px] leading-7 text-slate-700 sm:text-base">
-        {getHighlightTokens(result.snippet, submittedQuery).map((token, tokenIndex) =>
-          token.highlighted ? (
-            <span
-              key={`${result.episodeId}-${tokenIndex}`}
-              className="mx-[1px] rounded-md bg-primary/10 px-1.5 py-0.5 font-semibold text-primary shadow-[inset_0_0_0_1px_rgba(140,43,238,0.12)]"
-            >
-              {token.text}
-            </span>
-          ) : (
-            <span key={`${result.episodeId}-${tokenIndex}`}>{token.text}</span>
-          )
-        )}
-      </p>
+        </p>
+      </button>
 
       <div className="mt-6 flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
           <button
             type="button"
-            onClick={(event) => {
-              event.stopPropagation();
+            onClick={() => {
               onCopyQuote();
             }}
             className="inline-flex items-center gap-1.5 font-medium transition hover:text-primary"
@@ -118,8 +107,7 @@ export function SearchResultCard({
           </button>
           <button
             type="button"
-            onClick={(event) => {
-              event.stopPropagation();
+            onClick={() => {
               onShareResult();
             }}
             className="inline-flex items-center gap-1.5 font-medium transition hover:text-primary"
@@ -131,9 +119,6 @@ export function SearchResultCard({
 
         <Link
           href={result.episodeHref}
-          onClick={(event) => {
-            event.stopPropagation();
-          }}
           className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-[0_16px_32px_rgba(140,43,238,0.26)] transition hover:brightness-105 sm:w-auto"
         >
           Go to Episode

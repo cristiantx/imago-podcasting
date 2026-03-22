@@ -5,7 +5,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { LoaderCircle, Podcast, Search, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { formatTime, SearchResultCard } from "@/components/search-result-card";
+import { SearchResultCard } from "@/components/search-result-card";
 import { cn } from "@/lib/utils";
 import {
   type SemanticSearchResult,
@@ -434,6 +434,12 @@ function formatPublishedAt(value: string) {
     day: "numeric",
     year: "numeric"
   }).format(parsed);
+}
+
+function formatTime(seconds: number) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 async function copyToClipboard(value: string) {

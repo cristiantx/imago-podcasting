@@ -37,6 +37,7 @@ describe("SearchResultCard", () => {
     );
 
     expect(markup).toContain('aria-pressed="true"');
+    expect(markup).not.toContain('role="button"');
     expect(markup).toContain("Extracting Selectable Cards");
     expect(markup).toContain("Go to Episode");
   });
