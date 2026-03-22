@@ -6,6 +6,7 @@ import { LoaderCircle, Podcast, Search, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchResultCard } from "@/components/search-result-card";
+import { SearchPreviewRail } from "@/components/search-preview-rail";
 import { cn } from "@/lib/utils";
 import {
   type SemanticSearchResult,
@@ -332,56 +333,66 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
           />
         ) : null}
 
-        {podcasts.length > 0 && hasSubmittedSearch && filteredResults.length === 0 ? (
-          <EmptyState
-            title="No semantic matches found"
-            description="Try broadening the query or switching the search scope to all podcasts."
-          />
-        ) : null}
-
-        {visibleResults.length > 0 ? (
-          <div className="space-y-4">
-            {visibleResults.map((result) => {
-              const copyFeedback = actionFeedback[`${result.episodeId}:copy`] ?? "Copy Quote";
-              const shareFeedback = actionFeedback[`${result.episodeId}:share`] ?? "Share";
-              const isActiveResult =
-                activeResult !== null &&
-                activeResult.episodeId === result.episodeId &&
-                activeResult.startSec === result.startSec;
-
-              return (
-                <SearchResultCard
-                  key={`${result.episodeId}-${result.startSec}`}
-                  result={result}
-                  submittedQuery={submittedQuery}
-                  selected={isActiveResult}
-                  startLabel={formatTime(result.startSec)}
-                  copyFeedback={copyFeedback}
-                  shareFeedback={shareFeedback}
-                  onSelect={() => {
-                    setActiveResultKey(getSearchResultKey(result));
-                  }}
-                  onCopyQuote={() => {
-                    void onCopyQuote(result);
-                  }}
-                  onShareResult={() => {
-                    void onShareResult(result);
-                  }}
+        {podcasts.length > 0 && hasSubmittedSearch ? (
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+            <div className="space-y-4 lg:col-start-1">
+              {filteredResults.length === 0 ? (
+                <EmptyState
+                  title="No semantic matches found"
+                  description="Try broadening the query or switching the search scope to all podcasts."
                 />
-              );
-            })}
-          </div>
-        ) : null}
+              ) : null}
 
-        {canLoadMore ? (
-          <div className="flex justify-center pt-2">
-            <button
-              type="button"
-              onClick={() => setVisibleCount((currentCount) => currentCount + INITIAL_VISIBLE_RESULTS)}
-              className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-[0_14px_32px_rgba(15,23,42,0.05)] transition hover:border-primary/35 hover:text-primary"
-            >
-              Load More Results
-            </button>
+              {visibleResults.length > 0 ? (
+                <div className="space-y-4">
+                  {visibleResults.map((result) => {
+                    const copyFeedback = actionFeedback[`${result.episodeId}:copy`] ?? "Copy Quote";
+                    const shareFeedback = actionFeedback[`${result.episodeId}:share`] ?? "Share";
+                    const isActiveResult =
+                      activeResult !== null &&
+                      activeResult.episodeId === result.episodeId &&
+                      activeResult.startSec === result.startSec;
+
+                    return (
+                      <SearchResultCard
+                        key={`${result.episodeId}-${result.startSec}`}
+                        result={result}
+                        submittedQuery={submittedQuery}
+                        selected={isActiveResult}
+                        startLabel={formatTime(result.startSec)}
+                        copyFeedback={copyFeedback}
+                        shareFeedback={shareFeedback}
+                        onSelect={() => {
+                          setActiveResultKey(getSearchResultKey(result));
+                        }}
+                        onCopyQuote={() => {
+                          void onCopyQuote(result);
+                        }}
+                        onShareResult={() => {
+                          void onShareResult(result);
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              ) : null}
+
+              {canLoadMore ? (
+                <div className="flex justify-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount((currentCount) => currentCount + INITIAL_VISIBLE_RESULTS)}
+                    className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-[0_14px_32px_rgba(15,23,42,0.05)] transition hover:border-primary/35 hover:text-primary"
+                  >
+                    Load More Results
+                  </button>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="lg:col-start-2">
+              <SearchPreviewRail result={activeResult} submittedQuery={submittedQuery} />
+            </div>
           </div>
         ) : null}
       </div>
