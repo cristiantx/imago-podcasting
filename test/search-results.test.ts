@@ -5,6 +5,7 @@ import {
   filterSearchResults,
   getHighlightTokens,
   paginateSearchResults,
+  formatPreviewSpeakerLabel,
   sortSearchResults
 } from "@/lib/ui/search-results";
 
@@ -117,5 +118,10 @@ describe("search results helpers", () => {
       "sustainable",
       "design"
     ]);
+  });
+
+  it("formats preview speaker labels", () => {
+    expect(formatPreviewSpeakerLabel("Host")).toBe("Host");
+    expect(formatPreviewSpeakerLabel(null)).toBe("Transcript match");
   });
 });
