@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUpRight, Copy, LoaderCircle, Podcast, Search, Share2, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,10 @@ import {
   filterSearchResults,
   formatSearchScorePercent,
   getHighlightTokens,
+  getSearchResultKey,
   paginateSearchResults,
+  resolveInitialActiveResultKey,
+  resolveRetainedActiveResultKey,
   sortSearchResults
 } from "@/lib/ui/search-results";
 
@@ -33,20 +36,29 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
   const [selectedPodcastIds, setSelectedPodcastIds] = useState<string[]>([]);
   const [results, setResults] = useState<SemanticSearchResult[]>([]);
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_RESULTS);
+  const [activeResultKey, setActiveResultKey] = useState<string | null>(null);
   const [hasSubmittedSearch, setHasSubmittedSearch] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<Record<string, string>>({});
 
   const activePodcastIds = selectedPodcastIds.length > 0 ? selectedPodcastIds : podcasts.map((podcast) => podcast.id);
-  const filteredResults = sortSearchResults(
-    filterSearchResults(results, {
-      dateRange: "all",
-      minScorePercent: 0
-    }),
-    "relevance"
+  const filteredResults = useMemo(
+    () =>
+      sortSearchResults(
+        filterSearchResults(results, {
+          dateRange: "all",
+          minScorePercent: 0
+        }),
+        "relevance"
+      ),
+    [results]
   );
-  const visibleResults = paginateSearchResults(filteredResults, visibleCount);
+  const visibleResults = useMemo(() => paginateSearchResults(filteredResults, visibleCount), [filteredResults, visibleCount]);
+  const activeResult = useMemo(
+    () => filteredResults.find((result) => getSearchResultKey(result) === activeResultKey) ?? null,
+    [activeResultKey, filteredResults]
+  );
   const canLoadMore = filteredResults.length > visibleResults.length;
 
   useEffect(() => {
@@ -57,6 +69,10 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
       feedbackTimerIdsRef.current.clear();
     };
   }, []);
+
+  useEffect(() => {
+    setActiveResultKey((currentKey) => resolveRetainedActiveResultKey(filteredResults, currentKey));
+  }, [filteredResults]);
 
   function onAllPodcastsClick() {
     setSelectedPodcastIds([]);
@@ -122,6 +138,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
 
       setSubmittedQuery(trimmedQuery);
       setResults(payload.results ?? []);
+      setActiveResultKey(resolveInitialActiveResultKey(payload.results ?? []));
       setVisibleCount(INITIAL_VISIBLE_RESULTS);
       setActionFeedback({});
     } catch (submitError: unknown) {
@@ -327,6 +344,10 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
               const copyFeedback = actionFeedback[`${result.episodeId}:copy`] ?? "Copy Quote";
               const shareFeedback = actionFeedback[`${result.episodeId}:share`] ?? "Share";
               const scorePercent = formatSearchScorePercent(result.score);
+              const isActiveResult =
+                activeResult !== null &&
+                activeResult.episodeId === result.episodeId &&
+                activeResult.startSec === result.startSec;
 
               return (
                 <article
@@ -336,7 +357,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
                   <span
                     className={cn(
                       "absolute inset-y-0 left-0 w-1 rounded-l-[30px] transition-colors",
-                      index === 0 ? "bg-primary" : "bg-slate-200 group-hover:bg-primary/40"
+                      isActiveResult ? "bg-primary" : index === 0 ? "bg-primary/70" : "bg-slate-200 group-hover:bg-primary/40"
                     )}
                   />
 
