@@ -355,6 +355,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
                   result={result}
                   submittedQuery={submittedQuery}
                   selected={isActiveResult}
+                  startLabel={formatTime(result.startSec)}
                   copyFeedback={copyFeedback}
                   shareFeedback={shareFeedback}
                   onSelect={() => {
@@ -422,18 +423,6 @@ function PodcastAvatar({
       {(podcast.title ?? "P").slice(0, 1).toUpperCase()}
     </span>
   );
-}
-function formatPublishedAt(value: string) {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return "Unknown date";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric"
-  }).format(parsed);
 }
 
 function formatTime(seconds: number) {

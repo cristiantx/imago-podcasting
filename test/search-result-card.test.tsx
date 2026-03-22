@@ -28,6 +28,7 @@ describe("SearchResultCard", () => {
         result,
         submittedQuery: "selectable cards",
         selected: true,
+        startLabel: "0:42",
         copyFeedback: "Copy Quote",
         shareFeedback: "Share",
         onSelect: vi.fn(),

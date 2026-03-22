@@ -13,6 +13,7 @@ type SearchResultCardProps = {
   result: SemanticSearchResult;
   submittedQuery: string;
   selected: boolean;
+  startLabel: string;
   copyFeedback: string;
   shareFeedback: string;
   onSelect: () => void;
@@ -24,6 +25,7 @@ export function SearchResultCard({
   result,
   submittedQuery,
   selected,
+  startLabel,
   copyFeedback,
   shareFeedback,
   onSelect,
@@ -123,18 +125,12 @@ export function SearchResultCard({
         >
           Go to Episode
           <span aria-hidden="true">-</span>
-          {formatTime(result.startSec)}
+          {startLabel}
           <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </div>
     </article>
   );
-}
-
-export function formatTime(seconds: number) {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 function PodcastResultAvatar({ result }: { result: SemanticSearchResult }) {
