@@ -43,6 +43,30 @@ export function formatSearchScorePercent(score: number) {
   return Math.max(0, Math.min(100, Math.round(score * 100)));
 }
 
+export function getSearchResultKey(result: SemanticSearchResult) {
+  return `${result.episodeId}:${result.startSec}`;
+}
+
+export function resolveInitialActiveResultKey(results: SemanticSearchResult[]) {
+  return results.length > 0 ? getSearchResultKey(results[0]) : null;
+}
+
+export function resolveRetainedActiveResultKey(
+  results: SemanticSearchResult[],
+  currentKey: string | null
+) {
+  if (currentKey !== null && results.some((result) => getSearchResultKey(result) === currentKey)) {
+    return currentKey;
+  }
+
+  return resolveInitialActiveResultKey(results);
+}
+
+export function formatPreviewSpeakerLabel(speaker: string | null) {
+  const trimmedSpeaker = speaker?.trim();
+  return trimmedSpeaker && trimmedSpeaker.length > 0 ? trimmedSpeaker : "Transcript match";
+}
+
 export function filterSearchResults(
   results: SemanticSearchResult[],
   options: {

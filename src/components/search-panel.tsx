@@ -1,19 +1,24 @@
 "use client";
 
-import Link from "next/link";
-import { FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Copy, LoaderCircle, Podcast, Search, Share2, Sparkles } from "lucide-react";
+import React from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { LoaderCircle, Podcast, Search, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SearchPreviewRail } from "@/components/search-preview-rail";
+import { SearchResultsColumn } from "@/components/search-results-column";
 import { cn } from "@/lib/utils";
 import {
   type SemanticSearchResult,
   filterSearchResults,
-  formatSearchScorePercent,
-  getHighlightTokens,
+  getSearchResultKey,
   paginateSearchResults,
+  resolveInitialActiveResultKey,
+  resolveRetainedActiveResultKey,
   sortSearchResults
 } from "@/lib/ui/search-results";
+
+void React;
 
 const INITIAL_VISIBLE_RESULTS = 6;
 const SEARCH_TOP_K = 60;
@@ -33,20 +38,29 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
   const [selectedPodcastIds, setSelectedPodcastIds] = useState<string[]>([]);
   const [results, setResults] = useState<SemanticSearchResult[]>([]);
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_RESULTS);
-  const [hasSubmittedSearch, setHasSubmittedSearch] = useState(false);
+  const [activeResultKey, setActiveResultKey] = useState<string | null>(null);
+  const [hasCompletedSearch, setHasCompletedSearch] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<Record<string, string>>({});
 
   const activePodcastIds = selectedPodcastIds.length > 0 ? selectedPodcastIds : podcasts.map((podcast) => podcast.id);
-  const filteredResults = sortSearchResults(
-    filterSearchResults(results, {
-      dateRange: "all",
-      minScorePercent: 0
-    }),
-    "relevance"
+  const filteredResults = useMemo(
+    () =>
+      sortSearchResults(
+        filterSearchResults(results, {
+          dateRange: "all",
+          minScorePercent: 0
+        }),
+        "relevance"
+      ),
+    [results]
   );
-  const visibleResults = paginateSearchResults(filteredResults, visibleCount);
+  const visibleResults = useMemo(() => paginateSearchResults(filteredResults, visibleCount), [filteredResults, visibleCount]);
+  const activeResult = useMemo(
+    () => filteredResults.find((result) => getSearchResultKey(result) === activeResultKey) ?? null,
+    [activeResultKey, filteredResults]
+  );
   const canLoadMore = filteredResults.length > visibleResults.length;
 
   useEffect(() => {
@@ -57,6 +71,10 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
       feedbackTimerIdsRef.current.clear();
     };
   }, []);
+
+  useEffect(() => {
+    setActiveResultKey((currentKey) => resolveRetainedActiveResultKey(filteredResults, currentKey));
+  }, [filteredResults]);
 
   function onAllPodcastsClick() {
     setSelectedPodcastIds([]);
@@ -81,7 +99,6 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
     event.preventDefault();
 
     const trimmedQuery = query.trim();
-    setHasSubmittedSearch(true);
 
     if (podcasts.length === 0) {
       setError("Import a podcast before searching transcripts.");
@@ -122,8 +139,10 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
 
       setSubmittedQuery(trimmedQuery);
       setResults(payload.results ?? []);
+      setActiveResultKey(resolveInitialActiveResultKey(payload.results ?? []));
       setVisibleCount(INITIAL_VISIBLE_RESULTS);
       setActionFeedback({});
+      setHasCompletedSearch(true);
     } catch (submitError: unknown) {
       setError(submitError instanceof Error ? submitError.message : "Search failed.");
     } finally {
@@ -136,7 +155,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
       const absoluteUrl = resolveAbsoluteUrl(result.episodeHref);
       const quote = `${result.podcastTitle}\n${result.episodeTitle}\n${formatTime(result.startSec)} - ${formatTime(result.endSec)}\n\n"${result.snippet}"\n\n${absoluteUrl}`;
       await copyToClipboard(quote);
-      setActionMessage(`${result.episodeId}:copy`, "Copied");
+      setActionMessage(`${getSearchResultKey(result)}:copy`, "Copied");
     } catch {
       setError("Unable to copy that quote right now.");
     }
@@ -152,7 +171,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
           text: result.snippet,
           url: absoluteUrl
         });
-        setActionMessage(`${result.episodeId}:share`, "Shared");
+        setActionMessage(`${getSearchResultKey(result)}:share`, "Shared");
         return;
       } catch (shareError) {
         if (isAbortError(shareError)) {
@@ -163,7 +182,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
 
     try {
       await copyToClipboard(absoluteUrl);
-      setActionMessage(`${result.episodeId}:share`, "Link copied");
+      setActionMessage(`${getSearchResultKey(result)}:share`, "Link copied");
     } catch {
       setError("Unable to share that result right now.");
     }
@@ -210,8 +229,9 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
                 <button
                   type="button"
                   onClick={onAllPodcastsClick}
+                  aria-pressed={selectedPodcastIds.length === 0}
                   className={cn(
-                    "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition",
+                    "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2",
                     selectedPodcastIds.length === 0
                       ? "border-primary bg-primary text-white shadow-[0_10px_30px_rgba(140,43,238,0.22)]"
                       : "border-slate-200 bg-white/90 text-slate-700 hover:border-primary/35 hover:text-primary"
@@ -228,8 +248,9 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
                       key={podcast.id}
                       type="button"
                       onClick={() => onPodcastToggle(podcast.id)}
+                      aria-pressed={active}
                       className={cn(
-                        "inline-flex items-center gap-2 rounded-full border px-2.5 py-2 pr-4 text-sm font-medium transition",
+                        "inline-flex items-center gap-2 rounded-full border px-2.5 py-2 pr-4 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2",
                         active
                           ? "border-primary/25 bg-primary/10 text-primary shadow-[0_10px_25px_rgba(140,43,238,0.12)]"
                           : "border-slate-200 bg-white/90 text-slate-700 hover:border-primary/30 hover:text-primary"
@@ -254,10 +275,11 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
                 <Search className="pointer-events-none absolute left-6 top-1/2 h-5 w-5 -translate-y-1/2 text-primary" aria-hidden="true" />
                 <input
                   type="search"
+                  aria-label="Search transcripts"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search concepts, topics, and exact phrases across your transcript archive."
-                  className="h-16 w-full rounded-[24px] bg-transparent pl-14 pr-36 text-base text-slate-900 outline-none placeholder:text-slate-400 sm:text-lg"
+                  className="h-16 w-full rounded-[24px] bg-transparent pl-14 pr-36 text-base text-slate-900 outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-inset sm:text-lg"
                   disabled={podcasts.length === 0}
                 />
                 <Button
@@ -282,153 +304,95 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
       </div>
 
       {error ? (
-        <div className="rounded-[24px] border border-destructive/30 bg-destructive/5 px-5 py-4 text-sm text-destructive">
+        <div className="rounded-[24px] border border-destructive/30 bg-destructive/5 px-5 py-4 text-sm text-destructive" role="alert">
           {error}
         </div>
       ) : null}
 
       <div className="space-y-5">
-        {hasSubmittedSearch ? (
-          <div className="rounded-[28px] border border-white/80 bg-white/90 px-5 py-4 shadow-[0_18px_45px_rgba(15,23,42,0.06)] sm:px-6">
+        {hasCompletedSearch || loading ? (
+          <div
+            className="min-h-[4.5rem] rounded-[28px] border border-white/80 bg-white/90 px-5 py-4 shadow-[0_18px_45px_rgba(15,23,42,0.06)] sm:px-6"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             <div className="space-y-1">
-              <p className="text-sm text-slate-500">
-                Found <span className="font-semibold text-slate-900">{filteredResults.length}</span> results for{" "}
-                <span className="font-semibold text-slate-900">&quot;{submittedQuery}&quot;</span>
-              </p>
-              {loading ? <p className="text-xs font-medium text-primary">Refreshing results…</p> : null}
+              {loading ? (
+                <>
+                  <p className="text-sm text-slate-500">
+                    Searching transcripts for <span className="font-semibold text-slate-900">&quot;{submittedQuery || query.trim()}&quot;</span>
+                  </p>
+                  <p className="text-xs font-medium text-primary">Keeping the current results visible while we refresh matches.</p>
+                </>
+              ) : (
+                <p className="text-sm text-slate-500">
+                  Found <span className="font-semibold text-slate-900">{filteredResults.length}</span> results for{" "}
+                  <span className="font-semibold text-slate-900">&quot;{submittedQuery}&quot;</span>
+                </p>
+              )}
             </div>
           </div>
         ) : null}
 
         {podcasts.length === 0 ? (
           <EmptyState
-            title="No podcasts imported yet"
-            description="Add a feed from the workspace sidebar, then come back here to search your transcript archive by meaning."
+            title="Import a podcast to start searching"
+            description="Add a feed from the workspace sidebar, then search transcript moments by topic, phrase, or listener question."
           />
         ) : null}
 
-        {podcasts.length > 0 && !hasSubmittedSearch ? (
+        {podcasts.length > 0 && !hasCompletedSearch && !loading ? (
           <EmptyState
-            title="Run a query to view matched transcript moments"
+            title="Search transcripts to surface matched moments"
             description="Use natural language, exact phrases, or audience problems to surface the strongest episode clips."
           />
         ) : null}
 
-        {podcasts.length > 0 && hasSubmittedSearch && filteredResults.length === 0 ? (
-          <EmptyState
-            title="No semantic matches found"
-            description="Try broadening the query or switching the search scope to all podcasts."
-          />
-        ) : null}
+        {podcasts.length > 0 && hasCompletedSearch ? (
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+            <div className="space-y-4 lg:col-start-1">
+              {filteredResults.length === 0 ? (
+                <EmptyState
+                  title="No transcript moments matched this search"
+                  description="Try a broader phrase, remove filters, or switch the scope back to all podcasts."
+                />
+              ) : null}
 
-        {visibleResults.length > 0 ? (
-          <div className="space-y-4">
-            {visibleResults.map((result, index) => {
-              const copyFeedback = actionFeedback[`${result.episodeId}:copy`] ?? "Copy Quote";
-              const shareFeedback = actionFeedback[`${result.episodeId}:share`] ?? "Share";
-              const scorePercent = formatSearchScorePercent(result.score);
+              {visibleResults.length > 0 ? (
+                <SearchResultsColumn
+                  results={visibleResults}
+                  activeResult={activeResult}
+                  submittedQuery={submittedQuery}
+                  actionFeedback={actionFeedback}
+                  canLoadMore={canLoadMore}
+                  onLoadMore={() => {
+                    setVisibleCount((currentCount) => currentCount + INITIAL_VISIBLE_RESULTS);
+                  }}
+                  onSelectResult={(result) => {
+                    setActiveResultKey(getSearchResultKey(result));
+                  }}
+                  onCopyQuote={(result) => {
+                    void onCopyQuote(result);
+                  }}
+                  onShareResult={(result) => {
+                    void onShareResult(result);
+                  }}
+                />
+              ) : null}
+            </div>
 
-              return (
-                <article
-                  key={`${result.episodeId}-${result.startSec}`}
-                  className="group relative overflow-hidden rounded-[30px] border border-white/80 bg-white/95 p-6 shadow-[0_24px_64px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_30px_70px_rgba(15,23,42,0.12)] sm:p-7"
-                >
-                  <span
-                    className={cn(
-                      "absolute inset-y-0 left-0 w-1 rounded-l-[30px] transition-colors",
-                      index === 0 ? "bg-primary" : "bg-slate-200 group-hover:bg-primary/40"
-                    )}
-                  />
-
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex min-w-0 items-center gap-4">
-                      <PodcastResultAvatar result={result} />
-                      <div className="min-w-0">
-                        <h3 className="truncate text-lg font-bold text-slate-900 sm:text-xl">{result.episodeTitle}</h3>
-                        <p className="mt-1 text-sm font-medium text-slate-500">
-                          {result.podcastTitle}
-                          {result.publishedAt ? ` • ${formatPublishedAt(result.publishedAt)}` : ""}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div
-                      className={cn(
-                        "inline-flex h-fit items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold shadow-sm",
-                        scorePercent >= 95
-                          ? "border-primary/20 bg-primary/10 text-primary"
-                          : "border-primary/10 bg-primary/5 text-primary/80"
-                      )}
-                    >
-                      <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                      {scorePercent}% Match
-                    </div>
-                  </div>
-
-                  <p className="mt-6 text-[15px] leading-7 text-slate-700 sm:text-base">
-                    {getHighlightTokens(result.snippet, submittedQuery).map((token, tokenIndex) =>
-                      token.highlighted ? (
-                        <span
-                          key={`${result.episodeId}-${tokenIndex}`}
-                          className="mx-[1px] rounded-md bg-primary/10 px-1.5 py-0.5 font-semibold text-primary shadow-[inset_0_0_0_1px_rgba(140,43,238,0.12)]"
-                        >
-                          {token.text}
-                        </span>
-                      ) : (
-                        <span key={`${result.episodeId}-${tokenIndex}`}>{token.text}</span>
-                      )
-                    )}
-                  </p>
-
-                  <div className="mt-6 flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void onCopyQuote(result);
-                        }}
-                        className="inline-flex items-center gap-1.5 font-medium transition hover:text-primary"
-                      >
-                        <Copy className="h-4 w-4" aria-hidden="true" />
-                        {copyFeedback}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void onShareResult(result);
-                        }}
-                        className="inline-flex items-center gap-1.5 font-medium transition hover:text-primary"
-                      >
-                        <Share2 className="h-4 w-4" aria-hidden="true" />
-                        {shareFeedback}
-                      </button>
-                    </div>
-
-                    <Link
-                      href={result.episodeHref}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-[0_16px_32px_rgba(140,43,238,0.26)] transition hover:brightness-105 sm:w-auto"
-                    >
-                      Go to Episode
-                      <span aria-hidden="true">-</span>
-                      {formatTime(result.startSec)}
-                      <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                    </Link>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : null}
-
-        {canLoadMore ? (
-          <div className="flex justify-center pt-2">
-            <button
-              type="button"
-              onClick={() => setVisibleCount((currentCount) => currentCount + INITIAL_VISIBLE_RESULTS)}
-              className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-[0_14px_32px_rgba(15,23,42,0.05)] transition hover:border-primary/35 hover:text-primary"
-            >
-              Load More Results
-            </button>
+            <div className="lg:col-start-2">
+              <SearchPreviewRail
+                result={activeResult}
+                submittedQuery={submittedQuery}
+                copyFeedback={activeResult ? actionFeedback[`${getSearchResultKey(activeResult)}:copy`] ?? "Copy Quote" : undefined}
+                shareFeedback={activeResult ? actionFeedback[`${getSearchResultKey(activeResult)}:share`] ?? "Share" : undefined}
+                onCopyQuote={activeResult ? () => void onCopyQuote(activeResult) : undefined}
+                onShareResult={activeResult ? () => void onShareResult(activeResult) : undefined}
+                emptyState={filteredResults.length === 0 ? "no-results" : "idle"}
+              />
+            </div>
           </div>
         ) : null}
       </div>
@@ -443,6 +407,12 @@ function EmptyState({ title, description }: { title: string; description: string
       <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-500">{description}</p>
     </div>
   );
+}
+
+function formatTime(seconds: number) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 function PodcastAvatar({
@@ -470,44 +440,6 @@ function PodcastAvatar({
       {(podcast.title ?? "P").slice(0, 1).toUpperCase()}
     </span>
   );
-}
-
-function PodcastResultAvatar({ result }: { result: SemanticSearchResult }) {
-  if (result.podcastImageUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={result.podcastImageUrl}
-        alt={`${result.podcastTitle} cover`}
-        className="h-12 w-12 rounded-full object-cover ring-2 ring-slate-100"
-      />
-    );
-  }
-
-  return (
-    <div className="grid h-12 w-12 place-items-center rounded-full bg-[radial-gradient(circle_at_28%_25%,#d8b4fe,#7e22ce)] text-sm font-semibold text-white">
-      {result.podcastTitle.slice(0, 1).toUpperCase()}
-    </div>
-  );
-}
-
-function formatPublishedAt(value: string) {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return "Unknown date";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric"
-  }).format(parsed);
-}
-
-function formatTime(seconds: number) {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 async function copyToClipboard(value: string) {
