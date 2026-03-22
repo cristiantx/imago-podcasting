@@ -1,22 +1,23 @@
 "use client";
 
-import Link from "next/link";
+import React from "react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUpRight, Copy, LoaderCircle, Podcast, Search, Share2, Sparkles } from "lucide-react";
+import { LoaderCircle, Podcast, Search, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { formatTime, SearchResultCard } from "@/components/search-result-card";
 import { cn } from "@/lib/utils";
 import {
   type SemanticSearchResult,
   filterSearchResults,
-  formatSearchScorePercent,
-  getHighlightTokens,
   getSearchResultKey,
   paginateSearchResults,
   resolveInitialActiveResultKey,
   resolveRetainedActiveResultKey,
   sortSearchResults
 } from "@/lib/ui/search-results";
+
+void React;
 
 const INITIAL_VISIBLE_RESULTS = 6;
 const SEARCH_TOP_K = 60;
@@ -340,102 +341,32 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
 
         {visibleResults.length > 0 ? (
           <div className="space-y-4">
-            {visibleResults.map((result, index) => {
+            {visibleResults.map((result) => {
               const copyFeedback = actionFeedback[`${result.episodeId}:copy`] ?? "Copy Quote";
               const shareFeedback = actionFeedback[`${result.episodeId}:share`] ?? "Share";
-              const scorePercent = formatSearchScorePercent(result.score);
               const isActiveResult =
                 activeResult !== null &&
                 activeResult.episodeId === result.episodeId &&
                 activeResult.startSec === result.startSec;
 
               return (
-                <article
+                <SearchResultCard
                   key={`${result.episodeId}-${result.startSec}`}
-                  className="group relative overflow-hidden rounded-[30px] border border-white/80 bg-white/95 p-6 shadow-[0_24px_64px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_30px_70px_rgba(15,23,42,0.12)] sm:p-7"
-                >
-                  <span
-                    className={cn(
-                      "absolute inset-y-0 left-0 w-1 rounded-l-[30px] transition-colors",
-                      isActiveResult ? "bg-primary" : index === 0 ? "bg-primary/70" : "bg-slate-200 group-hover:bg-primary/40"
-                    )}
-                  />
-
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex min-w-0 items-center gap-4">
-                      <PodcastResultAvatar result={result} />
-                      <div className="min-w-0">
-                        <h3 className="truncate text-lg font-bold text-slate-900 sm:text-xl">{result.episodeTitle}</h3>
-                        <p className="mt-1 text-sm font-medium text-slate-500">
-                          {result.podcastTitle}
-                          {result.publishedAt ? ` • ${formatPublishedAt(result.publishedAt)}` : ""}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div
-                      className={cn(
-                        "inline-flex h-fit items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold shadow-sm",
-                        scorePercent >= 95
-                          ? "border-primary/20 bg-primary/10 text-primary"
-                          : "border-primary/10 bg-primary/5 text-primary/80"
-                      )}
-                    >
-                      <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                      {scorePercent}% Match
-                    </div>
-                  </div>
-
-                  <p className="mt-6 text-[15px] leading-7 text-slate-700 sm:text-base">
-                    {getHighlightTokens(result.snippet, submittedQuery).map((token, tokenIndex) =>
-                      token.highlighted ? (
-                        <span
-                          key={`${result.episodeId}-${tokenIndex}`}
-                          className="mx-[1px] rounded-md bg-primary/10 px-1.5 py-0.5 font-semibold text-primary shadow-[inset_0_0_0_1px_rgba(140,43,238,0.12)]"
-                        >
-                          {token.text}
-                        </span>
-                      ) : (
-                        <span key={`${result.episodeId}-${tokenIndex}`}>{token.text}</span>
-                      )
-                    )}
-                  </p>
-
-                  <div className="mt-6 flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void onCopyQuote(result);
-                        }}
-                        className="inline-flex items-center gap-1.5 font-medium transition hover:text-primary"
-                      >
-                        <Copy className="h-4 w-4" aria-hidden="true" />
-                        {copyFeedback}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void onShareResult(result);
-                        }}
-                        className="inline-flex items-center gap-1.5 font-medium transition hover:text-primary"
-                      >
-                        <Share2 className="h-4 w-4" aria-hidden="true" />
-                        {shareFeedback}
-                      </button>
-                    </div>
-
-                    <Link
-                      href={result.episodeHref}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-[0_16px_32px_rgba(140,43,238,0.26)] transition hover:brightness-105 sm:w-auto"
-                    >
-                      Go to Episode
-                      <span aria-hidden="true">-</span>
-                      {formatTime(result.startSec)}
-                      <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                    </Link>
-                  </div>
-                </article>
+                  result={result}
+                  submittedQuery={submittedQuery}
+                  selected={isActiveResult}
+                  copyFeedback={copyFeedback}
+                  shareFeedback={shareFeedback}
+                  onSelect={() => {
+                    setActiveResultKey(getSearchResultKey(result));
+                  }}
+                  onCopyQuote={() => {
+                    void onCopyQuote(result);
+                  }}
+                  onShareResult={() => {
+                    void onShareResult(result);
+                  }}
+                />
               );
             })}
           </div>
@@ -492,26 +423,6 @@ function PodcastAvatar({
     </span>
   );
 }
-
-function PodcastResultAvatar({ result }: { result: SemanticSearchResult }) {
-  if (result.podcastImageUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={result.podcastImageUrl}
-        alt={`${result.podcastTitle} cover`}
-        className="h-12 w-12 rounded-full object-cover ring-2 ring-slate-100"
-      />
-    );
-  }
-
-  return (
-    <div className="grid h-12 w-12 place-items-center rounded-full bg-[radial-gradient(circle_at_28%_25%,#d8b4fe,#7e22ce)] text-sm font-semibold text-white">
-      {result.podcastTitle.slice(0, 1).toUpperCase()}
-    </div>
-  );
-}
-
 function formatPublishedAt(value: string) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
@@ -523,12 +434,6 @@ function formatPublishedAt(value: string) {
     day: "numeric",
     year: "numeric"
   }).format(parsed);
-}
-
-function formatTime(seconds: number) {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 async function copyToClipboard(value: string) {
