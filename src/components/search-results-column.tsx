@@ -30,22 +30,22 @@ export function SearchResultsColumn({
   onCopyQuote,
   onShareResult
 }: SearchResultsColumnProps) {
+  const orderedResults = getOrderedResults(results, activeResult);
+
   return (
     <div className="flex flex-col gap-4">
-      {results.map((result, index) => {
+      {orderedResults.map((result) => {
         const copyFeedback = actionFeedback[`${result.episodeId}:copy`] ?? "Copy Quote";
         const shareFeedback = actionFeedback[`${result.episodeId}:share`] ?? "Share";
         const isActiveResult =
           activeResult !== null &&
           activeResult.episodeId === result.episodeId &&
           activeResult.startSec === result.startSec;
-        const mobileOrder = isActiveResult ? 0 : index + 1;
 
         return (
           <div
             key={getSearchResultKey(result)}
-            className="flex flex-col gap-4 order-[var(--result-order)] lg:order-none"
-            style={{ "--result-order": mobileOrder } as React.CSSProperties}
+            className="flex flex-col gap-4"
           >
             <SearchResultCard
               result={result}
@@ -99,6 +99,22 @@ export function SearchResultsColumn({
       ) : null}
     </div>
   );
+}
+
+function getOrderedResults(results: SemanticSearchResult[], activeResult: SemanticSearchResult | null) {
+  if (activeResult === null) {
+    return results;
+  }
+
+  const activeIndex = results.findIndex(
+    (result) => result.episodeId === activeResult.episodeId && result.startSec === activeResult.startSec
+  );
+
+  if (activeIndex === -1) {
+    return results;
+  }
+
+  return [results[activeIndex], ...results.slice(0, activeIndex), ...results.slice(activeIndex + 1)];
 }
 
 function formatTime(seconds: number) {

@@ -53,10 +53,12 @@ describe("SearchResultsColumn", () => {
       })
     );
 
-    expect(markup).toContain('style="--result-order:0"');
-    expect(markup).toContain('style="--result-order:1"');
-    expect(markup).toContain("Jump to 1:30");
-    expect(markup).toContain("Selected Result");
-    expect(markup).toContain("Next Result");
+    const selectedCardIndex = markup.indexOf('aria-label="Select Next Result for preview"');
+    const previewIndex = markup.indexOf("Jump to 1:30");
+    const laterCardIndex = markup.indexOf('aria-label="Select Selected Result for preview"');
+
+    expect(selectedCardIndex).toBeGreaterThan(-1);
+    expect(previewIndex).toBeGreaterThan(selectedCardIndex);
+    expect(laterCardIndex).toBeGreaterThan(previewIndex);
   });
 });

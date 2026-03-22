@@ -51,7 +51,7 @@ export function SearchPreviewRail({
         </div>
 
         <div className="space-y-5 px-5 py-5 sm:px-6">
-          <PlayerShell result={result} />
+          <PlayerShell result={result} emptyState={emptyState} submittedQuery={submittedQuery} />
 
           {result ? (
             <>
@@ -130,9 +130,21 @@ export function SearchPreviewRail({
   );
 }
 
-function PlayerShell({ result }: { result: SemanticSearchResult | null }) {
+function PlayerShell({
+  result,
+  emptyState,
+  submittedQuery
+}: {
+  result: SemanticSearchResult | null;
+  emptyState: "idle" | "no-results";
+  submittedQuery: string;
+}) {
   const hasSelection = result !== null;
-  const statusLabel = hasSelection ? "Selected result preview" : "Preview awaiting a result";
+  const statusLabel = hasSelection
+    ? "Selected result preview"
+    : emptyState === "no-results"
+      ? "No results preview"
+      : "Preview awaiting a result";
 
   return (
     <div
@@ -156,22 +168,37 @@ function PlayerShell({ result }: { result: SemanticSearchResult | null }) {
         <div className="min-w-0 flex-1 space-y-3">
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/55">
-              {hasSelection ? "Mini Player Shell" : "Waiting for a selection"}
+              {hasSelection ? "Mini Player Shell" : emptyState === "no-results" ? "Search complete" : "Waiting for a selection"}
             </p>
             <p className="truncate text-base font-semibold text-white">
-              {hasSelection ? result.episodeTitle : "Pick a result to load the preview"}
+              {hasSelection
+                ? result.episodeTitle
+                : emptyState === "no-results"
+                  ? "No matching transcript moments found"
+                  : "Pick a result to load the preview"}
             </p>
-            <p className="truncate text-sm text-white/70">{hasSelection ? result.podcastTitle : "The rail keeps the jump action close by."}</p>
+            <p className="truncate text-sm text-white/70">
+              {hasSelection
+                ? result.podcastTitle
+                : emptyState === "no-results"
+                  ? `Try broadening "${submittedQuery}" or switch back to all podcasts.`
+                  : "The rail keeps the jump action close by."}
+            </p>
           </div>
 
           <div className="space-y-2">
             <div className="h-1.5 rounded-full bg-white/12">
-              <div className={cn("h-full rounded-full", hasSelection ? "w-[48%] bg-primary" : "w-[18%] bg-white/45")} />
+              <div
+                className={cn(
+                  "h-full rounded-full",
+                  hasSelection ? "w-[48%] bg-primary" : emptyState === "no-results" ? "w-[8%] bg-white/35" : "w-[18%] bg-white/45"
+                )}
+              />
             </div>
 
             <div className="flex items-center justify-between text-xs font-medium text-white/60">
-              <span>{hasSelection ? formatTime(result.startSec) : "0:00"}</span>
-              <span>{hasSelection ? formatTime(result.endSec) : "Preview only"}</span>
+              <span>{hasSelection ? formatTime(result.startSec) : emptyState === "no-results" ? "--:--" : "0:00"}</span>
+              <span>{hasSelection ? formatTime(result.endSec) : emptyState === "no-results" ? "No preview" : "Preview only"}</span>
             </div>
           </div>
         </div>
