@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useId } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Clock3, Play, Podcast, Sparkles } from "lucide-react";
 
@@ -16,9 +16,10 @@ type SearchPreviewRailProps = {
 export function SearchPreviewRail({ result, submittedQuery, variant = "rail" }: SearchPreviewRailProps) {
   const wrapperClassName =
     variant === "rail" ? "hidden lg:block lg:sticky lg:top-6" : "lg:hidden";
+  const titleId = useId();
 
   return (
-    <aside className={wrapperClassName} aria-labelledby="search-preview-rail-title">
+    <aside className={wrapperClassName} aria-labelledby={titleId}>
       <div
         className={cn(
           "overflow-hidden rounded-[30px] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(247,244,255,0.98)_100%)] shadow-[0_24px_70px_rgba(15,23,42,0.08)]",
@@ -27,7 +28,7 @@ export function SearchPreviewRail({ result, submittedQuery, variant = "rail" }: 
       >
         <div className="border-b border-white/70 px-5 py-4 sm:px-6">
           <div
-            id="search-preview-rail-title"
+            id={titleId}
             className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary"
           >
             <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />

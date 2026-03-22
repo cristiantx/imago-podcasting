@@ -39,7 +39,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
   const [results, setResults] = useState<SemanticSearchResult[]>([]);
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_RESULTS);
   const [activeResultKey, setActiveResultKey] = useState<string | null>(null);
-  const [hasSubmittedSearch, setHasSubmittedSearch] = useState(false);
+  const [hasCompletedSearch, setHasCompletedSearch] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<Record<string, string>>({});
@@ -99,7 +99,6 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
     event.preventDefault();
 
     const trimmedQuery = query.trim();
-    setHasSubmittedSearch(true);
 
     if (podcasts.length === 0) {
       setError("Import a podcast before searching transcripts.");
@@ -143,6 +142,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
       setActiveResultKey(resolveInitialActiveResultKey(payload.results ?? []));
       setVisibleCount(INITIAL_VISIBLE_RESULTS);
       setActionFeedback({});
+      setHasCompletedSearch(true);
     } catch (submitError: unknown) {
       setError(submitError instanceof Error ? submitError.message : "Search failed.");
     } finally {
@@ -273,6 +273,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
                 <Search className="pointer-events-none absolute left-6 top-1/2 h-5 w-5 -translate-y-1/2 text-primary" aria-hidden="true" />
                 <input
                   type="search"
+                  aria-label="Search transcripts"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search concepts, topics, and exact phrases across your transcript archive."
@@ -307,7 +308,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
       ) : null}
 
       <div className="space-y-5">
-        {hasSubmittedSearch || loading ? (
+        {hasCompletedSearch || loading ? (
           <div
             className="min-h-[4.5rem] rounded-[28px] border border-white/80 bg-white/90 px-5 py-4 shadow-[0_18px_45px_rgba(15,23,42,0.06)] sm:px-6"
             role="status"
@@ -339,14 +340,14 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
           />
         ) : null}
 
-        {podcasts.length > 0 && !hasSubmittedSearch ? (
+        {podcasts.length > 0 && !hasCompletedSearch ? (
           <EmptyState
             title="Search transcripts to surface matched moments"
             description="Use natural language, exact phrases, or audience problems to surface the strongest episode clips."
           />
         ) : null}
 
-        {podcasts.length > 0 && hasSubmittedSearch ? (
+        {podcasts.length > 0 && hasCompletedSearch ? (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
             <div className="space-y-4 lg:col-start-1">
               {filteredResults.length === 0 ? (

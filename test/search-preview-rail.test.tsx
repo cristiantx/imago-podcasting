@@ -37,6 +37,31 @@ describe("SearchPreviewRail", () => {
     expect(markup).toContain('aria-label="Jump to Extracting Selectable Cards at 0:42"');
   });
 
+  it("uses a unique labeled region for each preview rail instance", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(SearchPreviewRail, {
+          result,
+          submittedQuery: "selectable cards",
+          variant: "rail"
+        }),
+        React.createElement(SearchPreviewRail, {
+          result,
+          submittedQuery: "selectable cards",
+          variant: "inline"
+        })
+      )
+    );
+
+    const ids = Array.from(markup.matchAll(/aria-labelledby="([^"]+)"/g), (match) => match[1]);
+
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+    expect(markup).not.toContain('search-preview-rail-title');
+  });
+
   it("renders a null-state preview when no result is selected", () => {
     const markup = renderToStaticMarkup(
       React.createElement(SearchPreviewRail, {
