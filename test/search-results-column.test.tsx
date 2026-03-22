@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { SearchResultsColumn } from "@/components/search-results-column";
-import type { SemanticSearchResult } from "@/lib/ui/search-results";
+import { getSearchResultKey, type SemanticSearchResult } from "@/lib/ui/search-results";
 
 const firstResult: SemanticSearchResult = {
   podcastId: "pod-1",
@@ -38,7 +38,7 @@ const secondResult: SemanticSearchResult = {
 };
 
 describe("SearchResultsColumn", () => {
-  it("renders the selected result as the first mobile item", () => {
+  it("renders the selected result first on mobile without changing desktop order", () => {
     const markup = renderToStaticMarkup(
       React.createElement(SearchResultsColumn, {
         results: [firstResult, secondResult],
@@ -53,12 +53,65 @@ describe("SearchResultsColumn", () => {
       })
     );
 
-    const selectedCardIndex = markup.indexOf('aria-label="Select Next Result for preview"');
-    const previewIndex = markup.indexOf("Jump to 1:30");
-    const laterCardIndex = markup.indexOf('aria-label="Select Selected Result for preview"');
+    const mobileSectionStart = markup.indexOf('class="flex flex-col gap-4 lg:hidden"');
+    const desktopSectionStart = markup.indexOf('class="hidden flex-col gap-4 lg:flex"');
+    const mobileSection = markup.slice(mobileSectionStart, desktopSectionStart);
+    const desktopSection = markup.slice(desktopSectionStart);
 
-    expect(selectedCardIndex).toBeGreaterThan(-1);
-    expect(previewIndex).toBeGreaterThan(selectedCardIndex);
-    expect(laterCardIndex).toBeGreaterThan(previewIndex);
+    expect(mobileSection.indexOf('aria-label="Select Next Result for preview"')).toBeGreaterThan(-1);
+    expect(mobileSection.indexOf("Jump to 1:30")).toBeGreaterThan(
+      mobileSection.indexOf('aria-label="Select Next Result for preview"')
+    );
+    expect(mobileSection.indexOf('aria-label="Select Selected Result for preview"')).toBeGreaterThan(
+      mobileSection.indexOf("Jump to 1:30")
+    );
+
+    expect(desktopSection.indexOf('aria-label="Select Selected Result for preview"')).toBeGreaterThan(-1);
+    expect(desktopSection.indexOf('aria-label="Select Next Result for preview"')).toBeGreaterThan(
+      desktopSection.indexOf('aria-label="Select Selected Result for preview"')
+    );
+  });
+
+  it("keeps feedback separate for matches from the same episode", () => {
+    const firstSameEpisodeResult: SemanticSearchResult = {
+      ...firstResult,
+      episodeId: "ep-shared",
+      episodeTitle: "Shared Episode Match One",
+      startSec: 42,
+      endSec: 58,
+      snippet: "First match from the same episode."
+    };
+    const secondSameEpisodeResult: SemanticSearchResult = {
+      ...firstResult,
+      episodeId: "ep-shared",
+      episodeTitle: "Shared Episode Match Two",
+      startSec: 126,
+      endSec: 141,
+      snippet: "Second match from the same episode."
+    };
+
+    const markup = renderToStaticMarkup(
+      React.createElement(SearchResultsColumn, {
+        results: [firstSameEpisodeResult, secondSameEpisodeResult],
+        activeResult: secondSameEpisodeResult,
+        submittedQuery: "shared episode",
+        actionFeedback: {
+          [`${getSearchResultKey(firstSameEpisodeResult)}:copy`]: "Copied first",
+          [`${getSearchResultKey(firstSameEpisodeResult)}:share`]: "Shared first",
+          [`${getSearchResultKey(secondSameEpisodeResult)}:copy`]: "Copied second",
+          [`${getSearchResultKey(secondSameEpisodeResult)}:share`]: "Shared second"
+        },
+        canLoadMore: false,
+        onLoadMore: vi.fn(),
+        onSelectResult: vi.fn(),
+        onCopyQuote: vi.fn(),
+        onShareResult: vi.fn()
+      })
+    );
+
+    expect(markup).toContain("Copied first");
+    expect(markup).toContain("Shared first");
+    expect(markup).toContain("Copied second");
+    expect(markup).toContain("Shared second");
   });
 });

@@ -94,5 +94,6 @@ describe("SearchPreviewRail", () => {
     expect(markup).toContain("Refine search");
     expect(markup).not.toContain("Select a result to preview it here");
     expect(markup).not.toContain("Pick a result to load the preview");
+    expect(markup).not.toContain("Waiting for a selection");
   });
 });

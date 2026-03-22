@@ -1,10 +1,9 @@
 "use client";
 
-import React, { Fragment } from "react";
+import React from "react";
 
 import { SearchPreviewRail } from "@/components/search-preview-rail";
 import { SearchResultCard } from "@/components/search-result-card";
-import { cn } from "@/lib/utils";
 import { getSearchResultKey, type SemanticSearchResult } from "@/lib/ui/search-results";
 
 type SearchResultsColumnProps = {
@@ -30,61 +29,93 @@ export function SearchResultsColumn({
   onCopyQuote,
   onShareResult
 }: SearchResultsColumnProps) {
-  const orderedResults = getOrderedResults(results, activeResult);
-
   return (
     <div className="flex flex-col gap-4">
-      {orderedResults.map((result) => {
-        const copyFeedback = actionFeedback[`${result.episodeId}:copy`] ?? "Copy Quote";
-        const shareFeedback = actionFeedback[`${result.episodeId}:share`] ?? "Share";
-        const isActiveResult =
-          activeResult !== null &&
-          activeResult.episodeId === result.episodeId &&
-          activeResult.startSec === result.startSec;
+      <div className="flex flex-col gap-4 lg:hidden">
+        {getMobileOrderedResults(results, activeResult).map((result) => {
+          const resultKey = getSearchResultKey(result);
+          const copyFeedback = actionFeedback[`${resultKey}:copy`] ?? "Copy Quote";
+          const shareFeedback = actionFeedback[`${resultKey}:share`] ?? "Share";
+          const isActiveResult =
+            activeResult !== null &&
+            activeResult.episodeId === result.episodeId &&
+            activeResult.startSec === result.startSec;
 
-        return (
-          <div
-            key={getSearchResultKey(result)}
-            className="flex flex-col gap-4"
-          >
-            <SearchResultCard
-              result={result}
-              submittedQuery={submittedQuery}
-              selected={isActiveResult}
-              startLabel={formatTime(result.startSec)}
-              copyFeedback={copyFeedback}
-              shareFeedback={shareFeedback}
-              onSelect={() => {
-                onSelectResult(result);
-              }}
-              onCopyQuote={() => {
-                onCopyQuote(result);
-              }}
-              onShareResult={() => {
-                onShareResult(result);
-              }}
-            />
+          return (
+            <div key={resultKey} className="flex flex-col gap-4">
+              <SearchResultCard
+                result={result}
+                submittedQuery={submittedQuery}
+                selected={isActiveResult}
+                startLabel={formatTime(result.startSec)}
+                copyFeedback={copyFeedback}
+                shareFeedback={shareFeedback}
+                onSelect={() => {
+                  onSelectResult(result);
+                }}
+                onCopyQuote={() => {
+                  onCopyQuote(result);
+                }}
+                onShareResult={() => {
+                  onShareResult(result);
+                }}
+              />
 
-            {isActiveResult ? (
-              <div className={cn("pt-2 lg:hidden")}>
-                <SearchPreviewRail
-                  result={activeResult}
-                  submittedQuery={submittedQuery}
-                  variant="inline"
-                  copyFeedback={copyFeedback}
-                  shareFeedback={shareFeedback}
-                  onCopyQuote={() => {
-                    onCopyQuote(result);
-                  }}
-                  onShareResult={() => {
-                    onShareResult(result);
-                  }}
-                />
-              </div>
-            ) : null}
-          </div>
-        );
-      })}
+              {isActiveResult ? (
+                <div className="pt-2">
+                  <SearchPreviewRail
+                    result={activeResult}
+                    submittedQuery={submittedQuery}
+                    variant="inline"
+                    copyFeedback={copyFeedback}
+                    shareFeedback={shareFeedback}
+                    onCopyQuote={() => {
+                      onCopyQuote(result);
+                    }}
+                    onShareResult={() => {
+                      onShareResult(result);
+                    }}
+                  />
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden flex-col gap-4 lg:flex">
+        {results.map((result) => {
+          const resultKey = getSearchResultKey(result);
+          const copyFeedback = actionFeedback[`${resultKey}:copy`] ?? "Copy Quote";
+          const shareFeedback = actionFeedback[`${resultKey}:share`] ?? "Share";
+          const isActiveResult =
+            activeResult !== null &&
+            activeResult.episodeId === result.episodeId &&
+            activeResult.startSec === result.startSec;
+
+          return (
+            <div key={resultKey} className="flex flex-col gap-4">
+              <SearchResultCard
+                result={result}
+                submittedQuery={submittedQuery}
+                selected={isActiveResult}
+                startLabel={formatTime(result.startSec)}
+                copyFeedback={copyFeedback}
+                shareFeedback={shareFeedback}
+                onSelect={() => {
+                  onSelectResult(result);
+                }}
+                onCopyQuote={() => {
+                  onCopyQuote(result);
+                }}
+                onShareResult={() => {
+                  onShareResult(result);
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
 
       {canLoadMore ? (
         <div className="flex justify-center pt-2">
@@ -101,7 +132,7 @@ export function SearchResultsColumn({
   );
 }
 
-function getOrderedResults(results: SemanticSearchResult[], activeResult: SemanticSearchResult | null) {
+function getMobileOrderedResults(results: SemanticSearchResult[], activeResult: SemanticSearchResult | null) {
   if (activeResult === null) {
     return results;
   }

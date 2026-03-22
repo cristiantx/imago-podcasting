@@ -155,7 +155,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
       const absoluteUrl = resolveAbsoluteUrl(result.episodeHref);
       const quote = `${result.podcastTitle}\n${result.episodeTitle}\n${formatTime(result.startSec)} - ${formatTime(result.endSec)}\n\n"${result.snippet}"\n\n${absoluteUrl}`;
       await copyToClipboard(quote);
-      setActionMessage(`${result.episodeId}:copy`, "Copied");
+      setActionMessage(`${getSearchResultKey(result)}:copy`, "Copied");
     } catch {
       setError("Unable to copy that quote right now.");
     }
@@ -171,7 +171,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
           text: result.snippet,
           url: absoluteUrl
         });
-        setActionMessage(`${result.episodeId}:share`, "Shared");
+        setActionMessage(`${getSearchResultKey(result)}:share`, "Shared");
         return;
       } catch (shareError) {
         if (isAbortError(shareError)) {
@@ -182,7 +182,7 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
 
     try {
       await copyToClipboard(absoluteUrl);
-      setActionMessage(`${result.episodeId}:share`, "Link copied");
+      setActionMessage(`${getSearchResultKey(result)}:share`, "Link copied");
     } catch {
       setError("Unable to share that result right now.");
     }
@@ -386,8 +386,8 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
               <SearchPreviewRail
                 result={activeResult}
                 submittedQuery={submittedQuery}
-                copyFeedback={activeResult ? actionFeedback[`${activeResult.episodeId}:copy`] ?? "Copy Quote" : undefined}
-                shareFeedback={activeResult ? actionFeedback[`${activeResult.episodeId}:share`] ?? "Share" : undefined}
+                copyFeedback={activeResult ? actionFeedback[`${getSearchResultKey(activeResult)}:copy`] ?? "Copy Quote" : undefined}
+                shareFeedback={activeResult ? actionFeedback[`${getSearchResultKey(activeResult)}:share`] ?? "Share" : undefined}
                 onCopyQuote={activeResult ? () => void onCopyQuote(activeResult) : undefined}
                 onShareResult={activeResult ? () => void onShareResult(activeResult) : undefined}
                 emptyState={filteredResults.length === 0 ? "no-results" : "idle"}
