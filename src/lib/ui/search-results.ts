@@ -63,7 +63,8 @@ export function resolveRetainedActiveResultKey(
 }
 
 export function formatPreviewSpeakerLabel(speaker: string | null) {
-  return speaker ?? "Transcript match";
+  const trimmedSpeaker = speaker?.trim();
+  return trimmedSpeaker && trimmedSpeaker.length > 0 ? trimmedSpeaker : "Transcript match";
 }
 
 export function filterSearchResults(

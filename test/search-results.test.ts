@@ -122,6 +122,7 @@ describe("search results helpers", () => {
 
   it("formats preview speaker labels", () => {
     expect(formatPreviewSpeakerLabel("Host")).toBe("Host");
+    expect(formatPreviewSpeakerLabel("   ")).toBe("Transcript match");
     expect(formatPreviewSpeakerLabel(null)).toBe("Transcript match");
   });
 });
