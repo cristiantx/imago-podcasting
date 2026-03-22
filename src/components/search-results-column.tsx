@@ -32,7 +32,7 @@ export function SearchResultsColumn({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4 lg:hidden">
-        {getMobileOrderedResults(results, activeResult).map((result) => {
+        {results.map((result) => {
           const resultKey = getSearchResultKey(result);
           const copyFeedback = actionFeedback[`${resultKey}:copy`] ?? "Copy Quote";
           const shareFeedback = actionFeedback[`${resultKey}:share`] ?? "Share";
@@ -130,22 +130,6 @@ export function SearchResultsColumn({
       ) : null}
     </div>
   );
-}
-
-function getMobileOrderedResults(results: SemanticSearchResult[], activeResult: SemanticSearchResult | null) {
-  if (activeResult === null) {
-    return results;
-  }
-
-  const activeIndex = results.findIndex(
-    (result) => result.episodeId === activeResult.episodeId && result.startSec === activeResult.startSec
-  );
-
-  if (activeIndex === -1) {
-    return results;
-  }
-
-  return [results[activeIndex], ...results.slice(0, activeIndex), ...results.slice(activeIndex + 1)];
 }
 
 function formatTime(seconds: number) {

@@ -42,6 +42,9 @@ describe("SearchPreviewRail", () => {
     expect(markup).toContain('aria-label="Share Extracting Selectable Cards"');
     expect(markup).toContain("Copied");
     expect(markup).toContain("Shared");
+    expect(markup).toContain("min-h-11");
+    expect(markup).toContain("motion-safe:hover:border-primary/35");
+    expect(markup).toContain("motion-reduce:transition-none");
   });
 
   it("uses a unique labeled region for each preview rail instance", () => {

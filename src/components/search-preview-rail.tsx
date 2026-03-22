@@ -81,7 +81,7 @@ export function SearchPreviewRail({
                     type="button"
                     onClick={onCopyQuote}
                     aria-label={`Copy quote from ${result.episodeTitle}`}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-primary/35 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 motion-safe:transition motion-safe:hover:border-primary/35 motion-safe:hover:text-primary motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
                   >
                     <span aria-live="polite" aria-atomic="true">
                       {copyFeedback ?? "Copy Quote"}
@@ -92,7 +92,7 @@ export function SearchPreviewRail({
                     type="button"
                     onClick={onShareResult}
                     aria-label={`Share ${result.episodeTitle}`}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-primary/35 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 motion-safe:transition motion-safe:hover:border-primary/35 motion-safe:hover:text-primary motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
                   >
                     <span aria-live="polite" aria-atomic="true">
                       {shareFeedback ?? "Share"}
@@ -112,7 +112,7 @@ export function SearchPreviewRail({
                     <Link
                       href={result.episodeHref}
                       aria-label={`Jump to ${result.episodeTitle} at ${formatTime(result.startSec)}`}
-                      className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-[0_16px_32px_rgba(140,43,238,0.26)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
+                      className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-[0_16px_32px_rgba(140,43,238,0.26)] motion-safe:transition motion-safe:hover:brightness-105 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
                     >
                       Jump to {formatTime(result.startSec)}
                       <ArrowUpRight className="h-4 w-4" aria-hidden="true" />

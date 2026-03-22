@@ -38,7 +38,7 @@ const secondResult: SemanticSearchResult = {
 };
 
 describe("SearchResultsColumn", () => {
-  it("renders the selected result first on mobile without changing desktop order", () => {
+  it("keeps the selected card in place and renders the preview directly beneath it on mobile", () => {
     const markup = renderToStaticMarkup(
       React.createElement(SearchResultsColumn, {
         results: [firstResult, secondResult],
@@ -58,12 +58,12 @@ describe("SearchResultsColumn", () => {
     const mobileSection = markup.slice(mobileSectionStart, desktopSectionStart);
     const desktopSection = markup.slice(desktopSectionStart);
 
-    expect(mobileSection.indexOf('aria-label="Select Next Result for preview"')).toBeGreaterThan(-1);
+    expect(mobileSection.indexOf('aria-label="Select Selected Result for preview"')).toBeGreaterThan(-1);
+    expect(mobileSection.indexOf('aria-label="Select Next Result for preview"')).toBeGreaterThan(
+      mobileSection.indexOf('aria-label="Select Selected Result for preview"')
+    );
     expect(mobileSection.indexOf("Jump to 1:30")).toBeGreaterThan(
       mobileSection.indexOf('aria-label="Select Next Result for preview"')
-    );
-    expect(mobileSection.indexOf('aria-label="Select Selected Result for preview"')).toBeGreaterThan(
-      mobileSection.indexOf("Jump to 1:30")
     );
 
     expect(desktopSection.indexOf('aria-label="Select Selected Result for preview"')).toBeGreaterThan(-1);

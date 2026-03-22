@@ -44,5 +44,8 @@ describe("SearchResultCard", () => {
     expect(markup).toContain('aria-label="Copy quote from Extracting Selectable Cards"');
     expect(markup).toContain('aria-label="Share Extracting Selectable Cards"');
     expect(markup).toContain('aria-label="Go to Extracting Selectable Cards at 0:42"');
+    expect(markup).toContain("min-h-11");
+    expect(markup).toContain("motion-safe:hover:-translate-y-0.5");
+    expect(markup).toContain("motion-reduce:transition-none");
   });
 });

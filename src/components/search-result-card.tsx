@@ -37,7 +37,7 @@ export function SearchResultCard({
   return (
     <article
       className={cn(
-        "group relative overflow-hidden rounded-[30px] border p-6 shadow-[0_24px_64px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_30px_70px_rgba(15,23,42,0.12)] sm:p-7",
+        "group relative overflow-hidden rounded-[30px] border p-6 shadow-[0_24px_64px_rgba(15,23,42,0.08)] motion-safe:transition motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_30px_70px_rgba(15,23,42,0.12)] motion-reduce:transform-none motion-reduce:transition-none sm:p-7",
         selected
           ? "border-primary/30 bg-white shadow-[0_28px_72px_rgba(140,43,238,0.12)]"
           : "border-white/80 bg-white/95"
@@ -55,7 +55,7 @@ export function SearchResultCard({
         aria-pressed={selected}
         aria-label={`Select ${result.episodeTitle} for preview`}
         onClick={onSelect}
-        className="block w-full cursor-pointer rounded-none text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-inset"
+        className="block w-full cursor-pointer rounded-none text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-inset motion-reduce:transition-none"
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-center gap-4">
@@ -104,7 +104,7 @@ export function SearchResultCard({
             onClick={() => {
               onCopyQuote();
             }}
-            className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 font-medium transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 py-2 font-medium motion-safe:transition motion-safe:hover:text-primary motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
           >
             <Copy className="h-4 w-4" aria-hidden="true" />
             <span aria-live="polite" aria-atomic="true">
@@ -117,7 +117,7 @@ export function SearchResultCard({
             onClick={() => {
               onShareResult();
             }}
-            className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 font-medium transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 py-2 font-medium motion-safe:transition motion-safe:hover:text-primary motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
           >
             <Share2 className="h-4 w-4" aria-hidden="true" />
             <span aria-live="polite" aria-atomic="true">
@@ -129,7 +129,7 @@ export function SearchResultCard({
         <Link
           href={result.episodeHref}
           aria-label={`Go to ${result.episodeTitle} at ${startLabel}`}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-[0_16px_32px_rgba(140,43,238,0.26)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 sm:w-auto"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-[0_16px_32px_rgba(140,43,238,0.26)] motion-safe:transition motion-safe:hover:brightness-105 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 sm:w-auto"
         >
           Go to Episode
           <span aria-hidden="true">-</span>
