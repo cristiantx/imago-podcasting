@@ -10,11 +10,15 @@ import { formatPreviewSpeakerLabel, type SemanticSearchResult } from "@/lib/ui/s
 type SearchPreviewRailProps = {
   result: SemanticSearchResult | null;
   submittedQuery: string;
+  variant?: "rail" | "inline";
 };
 
-export function SearchPreviewRail({ result, submittedQuery }: SearchPreviewRailProps) {
+export function SearchPreviewRail({ result, submittedQuery, variant = "rail" }: SearchPreviewRailProps) {
+  const wrapperClassName =
+    variant === "rail" ? "hidden lg:block lg:sticky lg:top-6" : "lg:hidden";
+
   return (
-    <aside className="lg:sticky lg:top-6">
+    <aside className={wrapperClassName}>
       <div
         className={cn(
           "overflow-hidden rounded-[30px] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(247,244,255,0.98)_100%)] shadow-[0_24px_70px_rgba(15,23,42,0.08)]",

@@ -5,8 +5,8 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { LoaderCircle, Podcast, Search, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { SearchResultCard } from "@/components/search-result-card";
 import { SearchPreviewRail } from "@/components/search-preview-rail";
+import { SearchResultsColumn } from "@/components/search-results-column";
 import { cn } from "@/lib/utils";
 import {
   type SemanticSearchResult,
@@ -341,52 +341,28 @@ export function SearchPanel({ podcasts }: { podcasts: SearchPodcastOption[] }) {
                   title="No semantic matches found"
                   description="Try broadening the query or switching the search scope to all podcasts."
                 />
-              ) : null}
+                ) : null}
 
               {visibleResults.length > 0 ? (
-                <div className="space-y-4">
-                  {visibleResults.map((result) => {
-                    const copyFeedback = actionFeedback[`${result.episodeId}:copy`] ?? "Copy Quote";
-                    const shareFeedback = actionFeedback[`${result.episodeId}:share`] ?? "Share";
-                    const isActiveResult =
-                      activeResult !== null &&
-                      activeResult.episodeId === result.episodeId &&
-                      activeResult.startSec === result.startSec;
-
-                    return (
-                      <SearchResultCard
-                        key={`${result.episodeId}-${result.startSec}`}
-                        result={result}
-                        submittedQuery={submittedQuery}
-                        selected={isActiveResult}
-                        startLabel={formatTime(result.startSec)}
-                        copyFeedback={copyFeedback}
-                        shareFeedback={shareFeedback}
-                        onSelect={() => {
-                          setActiveResultKey(getSearchResultKey(result));
-                        }}
-                        onCopyQuote={() => {
-                          void onCopyQuote(result);
-                        }}
-                        onShareResult={() => {
-                          void onShareResult(result);
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              ) : null}
-
-              {canLoadMore ? (
-                <div className="flex justify-center pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setVisibleCount((currentCount) => currentCount + INITIAL_VISIBLE_RESULTS)}
-                    className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-[0_14px_32px_rgba(15,23,42,0.05)] transition hover:border-primary/35 hover:text-primary"
-                  >
-                    Load More Results
-                  </button>
-                </div>
+                <SearchResultsColumn
+                  results={visibleResults}
+                  activeResult={activeResult}
+                  submittedQuery={submittedQuery}
+                  actionFeedback={actionFeedback}
+                  canLoadMore={canLoadMore}
+                  onLoadMore={() => {
+                    setVisibleCount((currentCount) => currentCount + INITIAL_VISIBLE_RESULTS);
+                  }}
+                  onSelectResult={(result) => {
+                    setActiveResultKey(getSearchResultKey(result));
+                  }}
+                  onCopyQuote={(result) => {
+                    void onCopyQuote(result);
+                  }}
+                  onShareResult={(result) => {
+                    void onShareResult(result);
+                  }}
+                />
               ) : null}
             </div>
 
@@ -407,6 +383,12 @@ function EmptyState({ title, description }: { title: string; description: string
       <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-500">{description}</p>
     </div>
   );
+}
+
+function formatTime(seconds: number) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 function PodcastAvatar({
@@ -434,12 +416,6 @@ function PodcastAvatar({
       {(podcast.title ?? "P").slice(0, 1).toUpperCase()}
     </span>
   );
-}
-
-function formatTime(seconds: number) {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 async function copyToClipboard(value: string) {
