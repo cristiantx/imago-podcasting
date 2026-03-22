@@ -8,10 +8,11 @@ import { buildWebVttFromUtterances } from "@/lib/transcription/captions";
 
 export async function buildPodcastTranscriptTextExport(input: { clerkUserId: string; podcastId: string }) {
   const podcast = await db.query.podcasts.findFirst({
+    columns: { id: true, title: true, feedUrl: true, deletedAt: true },
     where: and(eq(podcasts.id, input.podcastId), eq(podcasts.clerkUserId, input.clerkUserId))
   });
 
-  if (!podcast) {
+  if (!podcast || podcast.deletedAt) {
     throw new Error("Podcast not found");
   }
 
@@ -94,10 +95,11 @@ export async function buildEpisodeTranscriptVttExport(input: {
   episodeId: string;
 }) {
   const podcast = await db.query.podcasts.findFirst({
+    columns: { id: true, title: true, deletedAt: true },
     where: and(eq(podcasts.id, input.podcastId), eq(podcasts.clerkUserId, input.clerkUserId))
   });
 
-  if (!podcast) {
+  if (!podcast || podcast.deletedAt) {
     throw new Error("Podcast not found");
   }
 

@@ -5,20 +5,23 @@ import {
   BrainCircuit,
   Calendar,
   Check,
-  ChevronDown,
   ChevronRight,
   Clock3,
   EllipsisVertical,
   Hourglass,
   Mic,
+  Pencil,
   RefreshCw,
   Search,
   Settings,
   Sparkles,
+  Trash2,
   X
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type EpisodeItem = {
   id: string;
@@ -107,6 +110,14 @@ export function PodcastEpisodesBoard({ podcastId }: { podcastId: string }) {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [hasSubmittedSearch, setHasSubmittedSearch] = useState(false);
   const [openMenuEpisodeId, setOpenMenuEpisodeId] = useState<string | null>(null);
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renamingPodcast, setRenamingPodcast] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [renameTitle, setRenameTitle] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingPodcast, setDeletingPodcast] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     let isCurrent = true;
@@ -156,8 +167,102 @@ export function PodcastEpisodesBoard({ podcastId }: { podcastId: string }) {
     return () => window.removeEventListener("click", onWindowClick);
   }, [openMenuEpisodeId]);
 
+  useEffect(() => {
+    if (!settingsMenuOpen) {
+      return;
+    }
+
+    function onWindowClick() {
+      setSettingsMenuOpen(false);
+    }
+
+    window.addEventListener("click", onWindowClick);
+    return () => window.removeEventListener("click", onWindowClick);
+  }, [settingsMenuOpen]);
+
+  useEffect(() => {
+    if (renameDialogOpen) {
+      setRenameTitle(episodesData?.podcast.title ?? "");
+    }
+  }, [episodesData?.podcast.title, renameDialogOpen]);
+
   function openEpisodeDetails(episodeId: string) {
     router.push(`/podcasts/${podcastId}/episodes/${episodeId}`);
+  }
+
+  function openRenameDialog() {
+    setSettingsMenuOpen(false);
+    setDeleteDialogOpen(false);
+    setRenameError(null);
+    setRenameTitle(episodesData?.podcast.title ?? "");
+    setRenameDialogOpen(true);
+  }
+
+  async function renamePodcast() {
+    const trimmedTitle = renameTitle.trim();
+    if (!trimmedTitle) {
+      setRenameError("Podcast title cannot be empty.");
+      return;
+    }
+
+    setRenamingPodcast(true);
+    setRenameError(null);
+
+    try {
+      const response = await fetch(`/api/podcasts/${podcastId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: trimmedTitle })
+      });
+      const payload = (await response.json()) as { error?: string; message?: string; title?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to rename podcast.");
+      }
+
+      const nextTitle = payload.title ?? trimmedTitle;
+      setEpisodesData((current) =>
+        current
+          ? {
+              ...current,
+              podcast: {
+                ...current.podcast,
+                title: nextTitle
+              }
+            }
+          : current
+      );
+      setRenameDialogOpen(false);
+      router.refresh();
+    } catch (error: unknown) {
+      setRenameError(error instanceof Error ? error.message : "Failed to rename podcast.");
+    } finally {
+      setRenamingPodcast(false);
+    }
+  }
+
+  async function deletePodcast() {
+    setDeletingPodcast(true);
+    setDeleteError(null);
+
+    try {
+      const response = await fetch(`/api/podcasts/${podcastId}`, {
+        method: "DELETE"
+      });
+      const payload = (await response.json()) as { error?: string; message?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to delete podcast.");
+      }
+
+      setDeleteDialogOpen(false);
+      router.replace("/dashboard");
+      router.refresh();
+    } catch (error: unknown) {
+      setDeleteError(error instanceof Error ? error.message : "Failed to delete podcast.");
+    } finally {
+      setDeletingPodcast(false);
+    }
   }
 
   async function onSearchSubmit(event: FormEvent<HTMLFormElement>) {
@@ -239,24 +344,54 @@ export function PodcastEpisodesBoard({ podcastId }: { podcastId: string }) {
             </div>
 
             <div className="flex items-center gap-3">
-              <button
-                type="button"
-                className="inline-flex h-12 items-center gap-2 rounded-full border border-slate-200 bg-white px-6 text-sm font-medium text-slate-800 transition hover:border-primary/30 hover:text-primary"
-                onClick={(event) => event.preventDefault()}
-              >
-                <Settings className="h-4 w-4" aria-hidden="true" />
-                Settings
-              </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  className="inline-flex h-12 items-center gap-2 rounded-full border border-slate-200 bg-white px-6 text-sm font-medium text-slate-800 transition hover:border-primary/30 hover:text-primary"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setSettingsMenuOpen((value) => !value);
+                  }}
+                >
+                  <Settings className="h-4 w-4" aria-hidden="true" />
+                  Settings
+                </button>
+
+                {settingsMenuOpen ? (
+                  <div
+                    className="absolute right-0 top-14 z-30 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.16)]"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                      onClick={openRenameDialog}
+                    >
+                      <Pencil className="h-4 w-4" aria-hidden="true" />
+                      Rename podcast
+                    </button>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+                      onClick={() => {
+                        setSettingsMenuOpen(false);
+                        setRenameDialogOpen(false);
+                        setDeleteError(null);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                      Delete podcast
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
 
         <div className="flex items-center justify-between gap-3 px-1">
           <h3 className="text-lg font-bold text-slate-900">Recent Episodes</h3>
-          <button type="button" className="inline-flex items-center gap-1 text-sm font-medium text-slate-700" onClick={(event) => event.preventDefault()}>
-            <span className="font-normal text-slate-500">Sort by:</span> Date Added
-            <ChevronDown className="h-4 w-4" aria-hidden="true" />
-          </button>
         </div>
 
         {loadingEpisodes ? <StateMessage>Loading episodes...</StateMessage> : null}
@@ -379,6 +514,123 @@ export function PodcastEpisodesBoard({ podcastId }: { podcastId: string }) {
           </div>
         ) : null}
       </div>
+
+      {deleteDialogOpen ? (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 px-4 py-6 backdrop-blur-sm"
+          onClick={() => {
+            if (!deletingPodcast) {
+              setDeleteDialogOpen(false);
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-lg rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.28)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start gap-4">
+              <div className="grid h-12 w-12 flex-none place-items-center rounded-2xl bg-red-50 text-red-600">
+                <Trash2 className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xl font-bold text-slate-900">Delete this podcast?</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  This will soft delete the podcast from your workspace. Episodes, transcripts, search history, and usage records stay in the
+                  database so the podcast can be recovered later if needed.
+                </p>
+              </div>
+            </div>
+
+            {deleteError ? <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{deleteError}</p> : null}
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                disabled={deletingPodcast}
+                onClick={() => setDeleteDialogOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="inline-flex h-11 items-center justify-center rounded-full bg-red-600 px-5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={deletingPodcast}
+                onClick={() => {
+                  void deletePodcast();
+                }}
+              >
+                {deletingPodcast ? "Deleting..." : "Delete podcast"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {renameDialogOpen ? (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 px-4 py-6 backdrop-blur-sm"
+          onClick={() => {
+            if (!renamingPodcast) {
+              setRenameDialogOpen(false);
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-lg rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.28)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start gap-4">
+              <div className="grid h-12 w-12 flex-none place-items-center rounded-2xl bg-slate-100 text-slate-700">
+                <Pencil className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xl font-bold text-slate-900">Rename podcast</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Change the podcast title shown across the workspace. The feed data stays intact.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-2">
+              <Label htmlFor="podcast-title" className="text-sm font-medium text-slate-700">
+                Podcast title
+              </Label>
+              <Input
+                id="podcast-title"
+                value={renameTitle}
+                onChange={(event) => setRenameTitle(event.target.value)}
+                placeholder="Enter a title"
+                className="h-12 rounded-2xl px-4"
+                autoFocus
+              />
+            </div>
+
+            {renameError ? <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{renameError}</p> : null}
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                disabled={renamingPodcast}
+                onClick={() => setRenameDialogOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={renamingPodcast}
+                onClick={() => {
+                  void renamePodcast();
+                }}
+              >
+                {renamingPodcast ? "Saving..." : "Save changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="hidden">
         <div className="relative flex h-full flex-col overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-[0_24px_70px_rgba(79,70,229,0.1)]">

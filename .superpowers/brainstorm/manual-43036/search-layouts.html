@@ -1,0 +1,96 @@
+<h2>Search Workspace Structure</h2>
+<p class="subtitle">Same visual tone as option B. The question here is structural: where should the mini player live while people scan results and decide where to jump?</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">A. Sticky Preview Rail</div>
+        <div class="mockup-body" style="background: linear-gradient(180deg, #f6fbff 0%, #fff 100%);">
+          <div style="display:grid; grid-template-columns:1.15fr .85fr; gap:12px; min-height:220px;">
+            <div style="display:grid; gap:10px;">
+              <div style="padding:12px 14px; border-radius:18px; background:#fff; border:1px solid #d9ebf8;">Search field + scope chips</div>
+              <div style="padding:14px; border-radius:18px; background:#ffffff; border:1px solid #d9ebf8;">
+                <div style="font-weight:700;">Result card</div>
+                <div style="font-size:13px; color:#587082; margin-top:6px;">Snippet, metadata, timestamp, quick actions</div>
+              </div>
+              <div style="padding:14px; border-radius:18px; background:#f7fbff; border:1px solid #d9ebf8;">
+                <div style="font-weight:700;">Result card</div>
+                <div style="font-size:13px; color:#587082; margin-top:6px;">Another matched moment in the list</div>
+              </div>
+            </div>
+            <div style="padding:14px; border-radius:22px; background:#10324a; color:#eefaff;">
+              <div style="font-size:12px; text-transform:uppercase; letter-spacing:.16em; color:#92caec;">Sticky preview</div>
+              <div style="margin-top:12px; font-weight:700;">Mini player, waveform, selected timestamp</div>
+              <div style="margin-top:14px; height:52px; border-radius:14px; background:linear-gradient(90deg, rgba(120,198,238,.28), rgba(255,255,255,.08));"></div>
+              <div style="margin-top:12px; font-size:13px; line-height:1.55; color:#cbe6f6;">Transcript context and primary jump action stay visible while the result list scrolls.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Sticky Preview Rail</h3>
+      <p>Best for confidence and speed. Users can keep scanning the list while the mini player and transcript preview stay anchored on the right.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">B. Expandable Result Cards</div>
+        <div class="mockup-body" style="background: linear-gradient(180deg, #fffaf3 0%, #fff 100%);">
+          <div style="display:grid; gap:12px; min-height:220px;">
+            <div style="padding:12px 14px; border-radius:18px; background:#fff; border:1px solid #f0deca;">Search field + scope chips</div>
+            <div style="padding:14px; border-radius:18px; background:#fff; border:1px solid #f0deca;">
+              <div style="display:flex; justify-content:space-between; gap:12px;">
+                <div style="font-weight:700;">Selected result card</div>
+                <div style="color:#9b5f2f; font-size:13px;">27:14</div>
+              </div>
+              <div style="margin-top:10px; height:48px; border-radius:14px; background:linear-gradient(90deg, rgba(250,186,119,.2), rgba(255,255,255,.9));"></div>
+              <div style="margin-top:10px; font-size:13px; color:#6b625a;">Mini player and transcript context open inline under the selected result.</div>
+            </div>
+            <div style="padding:14px; border-radius:18px; background:#fffaf6; border:1px solid #f0deca;">
+              <div style="font-weight:700;">Collapsed result card</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Expandable Result Cards</h3>
+      <p>Cleaner on smaller screens and simpler to build, but users lose a stable preview anchor and the list gets jumpy as cards open and close.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">C. Sliding Detail Drawer</div>
+        <div class="mockup-body" style="background: linear-gradient(180deg, #f8fff7 0%, #fff 100%); position:relative;">
+          <div style="display:grid; gap:10px; min-height:220px;">
+            <div style="padding:12px 14px; border-radius:18px; background:#fff; border:1px solid #dceedd;">Search field + scope chips</div>
+            <div style="padding:14px; border-radius:18px; background:#fff; border:1px solid #dceedd;">
+              <div style="font-weight:700;">Result card</div>
+              <div style="font-size:13px; color:#57705f; margin-top:6px;">Selecting opens a side drawer over the page.</div>
+            </div>
+            <div style="position:absolute; right:0; top:34px; width:42%; height:160px; padding:14px; border-radius:22px 0 0 22px; background:#12382b; color:#effcf5;">
+              <div style="font-size:12px; text-transform:uppercase; letter-spacing:.16em; color:#95d9af;">Drawer</div>
+              <div style="margin-top:10px; font-weight:700;">Mini player and transcript context</div>
+              <div style="margin-top:14px; height:46px; border-radius:14px; background:linear-gradient(90deg, rgba(130,223,164,.28), rgba(255,255,255,.08));"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Sliding Detail Drawer</h3>
+      <p>Playful and dramatic, but it behaves more like a modal. That adds friction for rapid scanning and repeated jumps.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Recommendation</h3>
+  <p class="subtitle">A is the strongest fit. It keeps playback confirmation persistent, supports dense result scanning, and can collapse cleanly into a stacked mobile layout without changing the mental model.</p>
+</div>

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { requireUser } from "@/lib/auth/session";
 import { db } from "@/lib/db/client";
@@ -14,30 +14,52 @@ export async function POST(request: Request) {
   try {
     const clerkUserId = await requireUser();
     const body = searchSchema.parse(await request.json());
+    const scopePodcastIds = resolveScopePodcastIds(body);
 
-    const podcast = await db.query.podcasts.findFirst({
-      where: and(eq(podcasts.id, body.podcastId), eq(podcasts.clerkUserId, clerkUserId))
+    const authorizedPodcasts = await db.query.podcasts.findMany({
+      columns: {
+        id: true,
+        title: true,
+        imageUrl: true,
+        deletedAt: true
+      },
+      where: and(eq(podcasts.clerkUserId, clerkUserId), inArray(podcasts.id, scopePodcastIds))
     });
 
-    if (!podcast) {
+    const podcastsForUser = authorizedPodcasts.filter((podcast) => podcast && podcast.id && podcast.deletedAt == null);
+    if (podcastsForUser.length !== scopePodcastIds.length) {
       return fail("Podcast not found", 404);
     }
 
+    const podcastById = new Map(
+      podcastsForUser.map((podcast) => [
+        podcast.id,
+        {
+          title: podcast.title,
+          imageUrl: podcast.imageUrl
+        }
+      ])
+    );
+
     const [embedding] = await embedTextBatch([body.query]);
     const namespace = getNamespace(clerkUserId);
+    const requestedTopK = body.topK;
+    const candidateTopK = Math.min(Math.max(requestedTopK * 3, 30), 100);
 
     const searchResult = await namespace.query({
       vector: embedding,
-      topK: body.topK,
+      topK: candidateTopK,
       includeMetadata: true,
-      filter: {
-        podcastId: body.podcastId
-      }
+      filter:
+        scopePodcastIds.length === 1
+          ? { podcastId: scopePodcastIds[0] }
+          : { podcastId: { $in: scopePodcastIds } }
     });
 
     const deduped = dedupeMatches(
       (searchResult.matches ?? []).map((item) => ({
         score: item.score ?? 0,
+        podcastId: String(item.metadata?.podcastId ?? ""),
         episodeId: String(item.metadata?.episodeId ?? ""),
         episodeTitle: String(item.metadata?.episodeTitle ?? "Untitled"),
         episodeUrl: String(item.metadata?.episodeUrl ?? ""),
@@ -48,27 +70,37 @@ export async function POST(request: Request) {
         snippet: String(item.metadata?.snippet ?? "")
       }))
     )
-      .slice(0, body.topK)
-      .map((item) => ({
-        episodeId: item.episodeId,
-        episodeTitle: item.episodeTitle,
-        episodeUrl: item.episodeUrl.includes("?")
-          ? `${item.episodeUrl}&t=${Math.floor(item.startMs / 1000)}`
-          : `${item.episodeUrl}?t=${Math.floor(item.startMs / 1000)}`,
-        publishedAt: item.publishedAt,
-        startSec: Math.floor(item.startMs / 1000),
-        endSec: Math.floor(item.endMs / 1000),
-        speaker: item.speaker,
-        snippet: item.snippet,
-        score: item.score
-      }));
+      .filter((item) => podcastById.has(item.podcastId))
+      .slice(0, requestedTopK)
+      .map((item) => {
+        const podcast = podcastById.get(item.podcastId);
+        const startSec = Math.floor(item.startMs / 1000);
 
-    await db.insert(searchLogs).values({
-      podcastId: body.podcastId,
-      queryText: body.query,
-      resultCount: deduped.length,
-      latencyMs: Date.now() - startedAt
-    });
+        return {
+          podcastId: item.podcastId,
+          podcastTitle: podcast?.title ?? "Untitled Podcast",
+          podcastImageUrl: podcast?.imageUrl ?? null,
+          episodeId: item.episodeId,
+          episodeTitle: item.episodeTitle,
+          episodeUrl: appendTimestamp(item.episodeUrl, startSec),
+          episodeHref: `/podcasts/${item.podcastId}/episodes/${item.episodeId}?t=${startSec}`,
+          publishedAt: item.publishedAt,
+          startSec,
+          endSec: Math.floor(item.endMs / 1000),
+          speaker: item.speaker,
+          snippet: item.snippet,
+          score: item.score
+        };
+      });
+
+    if (scopePodcastIds.length === 1) {
+      await db.insert(searchLogs).values({
+        podcastId: scopePodcastIds[0],
+        queryText: body.query,
+        resultCount: deduped.length,
+        latencyMs: Date.now() - startedAt
+      });
+    }
 
     return ok({ results: deduped });
   } catch (error) {
@@ -77,8 +109,16 @@ export async function POST(request: Request) {
   }
 }
 
+type SearchPayload = {
+  podcastId?: string;
+  podcastIds?: string[];
+  query: string;
+  topK: number;
+};
+
 type Match = {
   score: number;
+  podcastId: string;
   episodeId: string;
   episodeTitle: string;
   episodeUrl: string;
@@ -88,6 +128,19 @@ type Match = {
   speaker: string | null;
   snippet: string;
 };
+
+function resolveScopePodcastIds(body: SearchPayload) {
+  const scope = body.podcastIds ?? (body.podcastId ? [body.podcastId] : []);
+  return Array.from(new Set(scope));
+}
+
+function appendTimestamp(url: string, seconds: number) {
+  if (!url) {
+    return "";
+  }
+
+  return url.includes("?") ? `${url}&t=${seconds}` : `${url}?t=${seconds}`;
+}
 
 function dedupeMatches(matches: Match[]): Match[] {
   const sorted = [...matches].sort((a, b) => b.score - a.score);

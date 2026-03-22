@@ -1,0 +1,116 @@
+<h2>Search Direction</h2>
+<p class="subtitle">Pick the interaction style that feels most right for Imago's flagship search. The constant across all three: jump to the exact episode and timestamp fast.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">A. Jump-First Search</div>
+        <div class="mockup-body" style="background: linear-gradient(180deg, #fff9f1 0%, #fff 100%); color: #2b2a28;">
+          <div style="display:grid; gap:12px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <div style="font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:#d2672a;">Exact moments</div>
+              <div style="padding:6px 10px; border-radius:999px; background:#fff0e6; color:#a44918; font-size:12px;">3 podcasts selected</div>
+            </div>
+            <div style="padding:14px 16px; border-radius:20px; background:#fff; border:1px solid #f3d5bf; box-shadow:0 14px 32px rgba(186, 107, 48, .08);">
+              <div style="font-size:15px; color:#6a625b;">Search concepts, quotes, themes, or exact phrasing</div>
+            </div>
+            <div style="display:grid; gap:10px;">
+              <div style="padding:14px; border-radius:20px; background:#ffffff; border:1px solid #f2e2d4;">
+                <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+                  <div>
+                    <div style="font-weight:700;">How to brief your podcast editor</div>
+                    <div style="font-size:13px; color:#7a7169; margin-top:4px;">Studio Notes • Episode 42</div>
+                  </div>
+                  <div style="padding:8px 10px; border-radius:14px; background:#ffeddc; font-weight:700; color:#9a4315;">12:48</div>
+                </div>
+                <div style="margin-top:10px; font-size:13px; line-height:1.5; color:#5f5852;">"...the cleanest handoff is to mark the beat, drop the timestamp, and let your editor jump straight in."</div>
+              </div>
+              <div style="padding:14px; border-radius:20px; background:#fffaf6; border:1px solid #f2e2d4;">
+                <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+                  <div>
+                    <div style="font-weight:700;">Production rituals that save hours</div>
+                    <div style="font-size:13px; color:#7a7169; margin-top:4px;">Small Team Radio • Episode 15</div>
+                  </div>
+                  <div style="padding:8px 10px; border-radius:14px; background:#ffeddc; font-weight:700; color:#9a4315;">31:06</div>
+                </div>
+                <div style="margin-top:10px; font-size:13px; line-height:1.5; color:#5f5852;">"...we keep one searchable transcript archive because nobody remembers which episode held the original decision."</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Jump-First Search</h3>
+      <p>Large, friendly query surface with timestamp chips that dominate each result. Lowest friction for solo creators who want to land on the right clip immediately.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">B. Review Workspace</div>
+        <div class="mockup-body" style="background: linear-gradient(180deg, #f6fbff 0%, #fff 100%); color: #213040;">
+          <div style="display:grid; grid-template-columns: 1.1fr .9fr; gap:12px;">
+            <div style="display:grid; gap:10px;">
+              <div style="padding:12px 14px; border-radius:18px; background:#fff; border:1px solid #d9ebf8;">Search across 14 imported episodes</div>
+              <div style="padding:14px; border-radius:18px; background:#ffffff; border:1px solid #d9ebf8;">
+                <div style="font-weight:700;">Why transcripts speed up post-production</div>
+                <div style="margin-top:8px; font-size:13px; color:#5d7386;">27:14 • 92% match</div>
+                <div style="margin-top:10px; font-size:13px; line-height:1.5; color:#42576a;">"...searchable transcripts changed our review cycle because the producer can jump directly to the decision point."</div>
+              </div>
+              <div style="padding:14px; border-radius:18px; background:#f7fbff; border:1px solid #d9ebf8;">
+                <div style="font-weight:700;">Editing notes your host will actually use</div>
+                <div style="margin-top:8px; font-size:13px; color:#5d7386;">08:51 • 87% match</div>
+                <div style="margin-top:10px; font-size:13px; line-height:1.5; color:#42576a;">"...make timestamps the center of the note, not the footnote."</div>
+              </div>
+            </div>
+            <div style="padding:14px; border-radius:20px; background:#10324a; color:#f2fbff; min-height:220px;">
+              <div style="font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#8dc6ea;">Preview</div>
+              <div style="margin-top:12px; font-weight:700;">Episode waveform + transcript preview</div>
+              <div style="margin-top:14px; height:54px; border-radius:16px; background:linear-gradient(90deg, rgba(120,198,238,.25), rgba(255,255,255,.08));"></div>
+              <div style="margin-top:14px; font-size:13px; line-height:1.55; color:#d0e7f5;">Selected snippet opens alongside enough transcript context to confirm you're jumping to the right place before leaving search.</div>
+              <div style="margin-top:16px; display:inline-flex; padding:8px 10px; border-radius:999px; background:#d8f0ff; color:#0f405d; font-weight:700;">Open at 27:14</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Review Workspace</h3>
+      <p>Balances fast retrieval with a live preview pane. Better when small teams need confidence before they jump, but the layout is denser.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">C. Spotlight Mode</div>
+        <div class="mockup-body" style="background: linear-gradient(180deg, #f7fff8 0%, #fff 100%); color: #20332a;">
+          <div style="display:grid; gap:16px; place-items:center; min-height:220px;">
+            <div style="width:100%; max-width:320px; padding:18px 20px; border-radius:26px; background:#ffffff; border:1px solid #dceedd; box-shadow:0 18px 40px rgba(95, 171, 111, .08);">
+              <div style="font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:#3f8d55;">Quick jump</div>
+              <div style="margin-top:10px; font-size:18px; font-weight:700;">Search everything your audience heard</div>
+              <div style="margin-top:16px; padding:12px 14px; border-radius:18px; background:#f3fbf3; color:#4c6252;">podcast editor workflow</div>
+              <div style="margin-top:16px; display:grid; gap:8px;">
+                <div style="padding:10px 12px; border-radius:16px; background:#f7fff8; border:1px solid #dceedd;">Jump to 04:12 in "Producer habits that scale"</div>
+                <div style="padding:10px 12px; border-radius:16px; background:#f7fff8; border:1px solid #dceedd;">Jump to 18:44 in "Solo host systems"</div>
+                <div style="padding:10px 12px; border-radius:16px; background:#f7fff8; border:1px solid #dceedd;">Jump to 33:05 in "Tighter editorial loops"</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Spotlight Mode</h3>
+      <p>Most playful and minimal. Feels fast and modern, but gives up filtering and scanability once result counts grow.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Recommendation</h3>
+  <p class="subtitle">A is the best default. It makes timestamp confidence the visual hero, stays friendly, and leaves room for richer interactions later without making the main search view feel heavy.</p>
+</div>

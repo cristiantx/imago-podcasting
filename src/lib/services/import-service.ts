@@ -7,6 +7,8 @@ import { computeReservationPolicy } from "@/lib/entitlements/policy";
 import { getOrCreateEntitlement, releaseReservedUnit, reserveEpisodeUnits } from "@/lib/entitlements/service";
 import { episodes, ingestJobs, plans, podcasts, usageLedger } from "@/lib/db/schema";
 import { parseRssFeed } from "@/lib/rss/parse-feed";
+import { resolveRequestedEpisodeCount } from "@/lib/services/import-selection";
+import { resolvePodcastTitleForFeedSync } from "@/lib/services/podcast-title";
 
 type ImportRequest = {
   clerkUserId: string;
@@ -70,10 +72,19 @@ export type ImportPreviewResult =
     };
 
 export async function getExistingPodcastForFeed(input: { clerkUserId: string; feedUrl: string }) {
-  return db.query.podcasts.findFirst({
-    columns: { id: true, title: true },
+  const podcast = await db.query.podcasts.findFirst({
+    columns: { id: true, title: true, deletedAt: true },
     where: and(eq(podcasts.clerkUserId, input.clerkUserId), eq(podcasts.feedUrl, input.feedUrl))
   });
+
+  if (!podcast || podcast.deletedAt) {
+    return undefined;
+  }
+
+  return {
+    id: podcast.id,
+    title: podcast.title
+  };
 }
 
 export async function previewImportFromFeed(input: { clerkUserId: string; rssUrl: string }): Promise<ImportPreviewResult> {
@@ -241,12 +252,16 @@ export async function startImportFromFeed(input: ImportRequest): Promise<ImportR
   const newCandidates = parsedFeed.episodes.filter((item) => !existingByGuid.has(item.guid));
   const selectedGuidSet = new Set((input.selectedEpisodeGuids ?? []).filter((guid) => guid.length > 0));
   const candidatePool = selectedGuidSet.size > 0 ? newCandidates.filter((episode) => selectedGuidSet.has(episode.guid)) : newCandidates;
+  const requestedEpisodes = resolveRequestedEpisodeCount({
+    requestedEpisodes: input.requestedEpisodes,
+    selectedEpisodeGuids: input.selectedEpisodeGuids
+  });
 
   const reservationKey = crypto.randomUUID();
   const reservation = await reserveEpisodeUnits({
     clerkUserId: input.clerkUserId,
     podcastId: podcast.id,
-    requestedEpisodes: input.requestedEpisodes,
+    requestedEpisodes,
     feedEpisodeCount: candidatePool.length,
     reservationKey
   });
@@ -384,10 +399,11 @@ export async function startResyncForPodcast(input: {
   requestedEpisodes?: number;
 }) {
   const podcast = await db.query.podcasts.findFirst({
+    columns: { id: true, feedUrl: true, deletedAt: true },
     where: and(eq(podcasts.id, input.podcastId), eq(podcasts.clerkUserId, input.clerkUserId))
   });
 
-  if (!podcast) {
+  if (!podcast || podcast.deletedAt) {
     throw new Error("Podcast not found");
   }
 
@@ -400,10 +416,11 @@ export async function startResyncForPodcast(input: {
 
 export async function retryQueueDispatchForPodcast(input: { clerkUserId: string; podcastId: string }) {
   const podcast = await db.query.podcasts.findFirst({
+    columns: { id: true, deletedAt: true },
     where: and(eq(podcasts.id, input.podcastId), eq(podcasts.clerkUserId, input.clerkUserId))
   });
 
-  if (!podcast) {
+  if (!podcast || podcast.deletedAt) {
     throw new Error("Podcast not found");
   }
 
@@ -508,6 +525,7 @@ async function dispatchImportJob(input: { podcastId: string; jobId: string; epis
   }
 }
 
+
 async function upsertPodcast(input: {
   clerkUserId: string;
   feedUrl: string;
@@ -526,12 +544,16 @@ async function upsertPodcast(input: {
     const [updated] = await db
       .update(podcasts)
       .set({
-        title: input.title,
+        title: resolvePodcastTitleForFeedSync({
+          currentTitle: existing.title,
+          feedTitle: input.title
+        }),
         description: input.description,
         author: input.author,
         category: input.category,
         imageUrl: input.imageUrl,
         language: input.language || "en",
+        deletedAt: null,
         updatedAt: new Date()
       })
       .where(eq(podcasts.id, existing.id))

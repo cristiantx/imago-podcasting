@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
 import {
   BarChart3,
-  Bell,
   LayoutGrid,
   Menu,
   AudioLines,
@@ -124,27 +123,6 @@ export function AppShell({ children, podcasts, planName }: AppShellProps) {
                 </p>
               </div>
 
-              <div className="ml-auto flex items-center gap-3">
-                <label className="relative hidden sm:block">
-                  <Search
-                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                    aria-hidden="true"
-                  />
-                  <input
-                    type="text"
-                    aria-label="Search episodes"
-                    placeholder="Search episodes..."
-                    className="h-10 w-64 rounded-full border border-white bg-white/90 pl-9 pr-4 text-sm shadow-[0_1px_2px_rgba(15,23,42,0.06)] outline-none transition focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
-                  />
-                </label>
-                <button
-                  type="button"
-                  aria-label="Notifications"
-                  className="grid h-10 w-10 place-items-center rounded-full border border-white bg-white/90 text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition hover:border-primary/45 hover:text-primary"
-                >
-                  <Bell className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </div>
             </div>
           </header>
         ) : (
@@ -181,12 +159,17 @@ function SidebarContent({
     <div className="flex h-full flex-col">
       <div className="px-6 py-7">
         <Link href="/dashboard" className="inline-flex items-center gap-3">
-          <div className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground">
-            <AudioLines className="h-4 w-4" aria-hidden="true" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-purple-400 shadow-lg shadow-primary/20">
+            <AudioLines className="h-[18px] w-[18px] text-white" aria-hidden="true" />
           </div>
-          <span className="text-[30px] font-bold leading-none tracking-tight text-slate-900">
-            Imago
-          </span>
+          <div className="flex flex-col leading-tight">
+            <span className="text-2xl font-bold leading-none tracking-tight text-slate-900">
+              Imago
+            </span>
+            <span className="mt-0.5 text-xs font-medium text-slate-400">
+              Podcasting
+            </span>
+          </div>
         </Link>
       </div>
 

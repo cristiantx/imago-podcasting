@@ -19,7 +19,7 @@ export async function processEpisodePipeline(input: { episodeId: string }) {
   }
 
   const podcast = await db.query.podcasts.findFirst({ where: eq(podcasts.id, episode.podcastId) });
-  if (!podcast) {
+  if (!podcast || podcast.deletedAt) {
     throw new Error("Podcast not found for episode");
   }
 

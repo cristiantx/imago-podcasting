@@ -4,13 +4,21 @@ import { notFound } from "next/navigation";
 import { EpisodeDetailBoard } from "@/components/episode-detail-board";
 import { requireUser } from "@/lib/auth/session";
 import { getEpisodeDetailForUser } from "@/lib/services/podcast-reader";
+import { normalizeEpisodeSeekParam } from "@/lib/ui/episode-seek";
 import { podcastIdSchema } from "@/lib/validation/common";
 
 const episodeIdSchema = z.string().uuid();
 
-export default async function EpisodeDetailPage({ params }: { params: Promise<{ podcastId: string; episodeId: string }> }) {
+export default async function EpisodeDetailPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ podcastId: string; episodeId: string }>;
+  searchParams: Promise<{ t?: string | string[] }>;
+}) {
   const clerkUserId = await requireUser();
   const { podcastId, episodeId } = await params;
+  const { t } = await searchParams;
 
   try {
     const payload = await getEpisodeDetailForUser({
@@ -40,6 +48,7 @@ export default async function EpisodeDetailPage({ params }: { params: Promise<{ 
           durationSec: payload.episode.durationSec,
           status: payload.episode.status
         }}
+        initialSeekSec={normalizeEpisodeSeekParam(t)}
         segments={payload.segments}
       />
     );

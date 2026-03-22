@@ -46,6 +46,7 @@ type EpisodeDetailBoardProps = {
     durationSec: number | null;
     status: string;
   };
+  initialSeekSec?: number | null;
   segments: EpisodeTranscriptSegment[];
 };
 
@@ -109,10 +110,11 @@ const STOP_WORDS = new Set([
   "your"
 ]);
 
-export function EpisodeDetailBoard({ podcastId, podcast, episode, segments }: EpisodeDetailBoardProps) {
+export function EpisodeDetailBoard({ podcastId, podcast, episode, initialSeekSec = null, segments }: EpisodeDetailBoardProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const transcriptContainerRef = useRef<HTMLDivElement | null>(null);
   const transcriptRowRefById = useRef(new Map<string, HTMLButtonElement | null>());
+  const hasAppliedInitialSeekRef = useRef(false);
 
   const [query, setQuery] = useState("");
   const [currentTime, setCurrentTime] = useState(0);
@@ -183,6 +185,15 @@ export function EpisodeDetailBoard({ podcastId, podcast, episode, segments }: Ep
 
     audio.playbackRate = playbackRate;
   }, [playbackRate]);
+
+  useEffect(() => {
+    if (initialSeekSec === null || hasAppliedInitialSeekRef.current) {
+      return;
+    }
+
+    hasAppliedInitialSeekRef.current = true;
+    seekTo(initialSeekSec, false);
+  }, [initialSeekSec, timelineDuration]);
 
   useEffect(() => {
     if (!activeSegmentId) {

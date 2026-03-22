@@ -57,6 +57,7 @@ export const podcasts = pgTable(
     imageUrl: text("image_url"),
     language: varchar("language", { length: 16 }).notNull().default("en"),
     status: varchar("status", { length: 32 }).notNull().default("idle"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()

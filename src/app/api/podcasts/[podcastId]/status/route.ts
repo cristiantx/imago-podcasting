@@ -14,10 +14,11 @@ export async function GET(_request: Request, context: { params: Promise<{ podcas
     const parsedPodcastId = podcastIdSchema.parse(podcastId);
 
     const podcast = await db.query.podcasts.findFirst({
+      columns: { id: true, deletedAt: true },
       where: and(eq(podcasts.id, parsedPodcastId), eq(podcasts.clerkUserId, clerkUserId))
     });
 
-    if (!podcast) {
+    if (!podcast || podcast.deletedAt) {
       return fail("Podcast not found", 404);
     }
 

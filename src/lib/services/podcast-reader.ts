@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { cache } from "react";
 
 import { db } from "@/lib/db/client";
 import { episodes, ingestJobs, podcasts, transcriptSegments } from "@/lib/db/schema";
@@ -12,7 +13,8 @@ export async function listPodcastsForUser(clerkUserId: string) {
     orderBy: [desc(podcasts.updatedAt)]
   });
 
-  const podcastIds = podcastRows.map((podcast) => podcast.id);
+  const activePodcastRows = podcastRows.filter((podcast) => podcast.deletedAt == null);
+  const podcastIds = activePodcastRows.map((podcast) => podcast.id);
 
   const episodeRows = podcastIds.length
     ? await db.query.episodes.findMany({
@@ -59,7 +61,7 @@ export async function listPodcastsForUser(clerkUserId: string) {
     episodesByPodcast.set(episode.podcastId, bucket);
   }
 
-  return podcastRows.map((podcast) => {
+  return activePodcastRows.map((podcast) => {
     const podcastEpisodes = episodesByPodcast.get(podcast.id) ?? [];
     const stageCounts = summarizeStageCounts(podcastEpisodes.map((episode) => episode.status));
 
@@ -81,12 +83,15 @@ export async function listPodcastsForUser(clerkUserId: string) {
   });
 }
 
+export const getCachedPodcastsForUser = cache(async (clerkUserId: string) => listPodcastsForUser(clerkUserId));
+
 export async function getPodcastEpisodesForUser(input: { clerkUserId: string; podcastId: string }) {
   const podcast = await db.query.podcasts.findFirst({
+    columns: { id: true, deletedAt: true },
     where: and(eq(podcasts.id, input.podcastId), eq(podcasts.clerkUserId, input.clerkUserId))
   });
 
-  if (!podcast) {
+  if (!podcast || podcast.deletedAt) {
     throw new Error("Podcast not found");
   }
 
@@ -140,12 +145,13 @@ export async function getEpisodeDetailForUser(input: { clerkUserId: string; podc
       title: true,
       author: true,
       category: true,
-      imageUrl: true
+      imageUrl: true,
+      deletedAt: true
     },
     where: and(eq(podcasts.id, input.podcastId), eq(podcasts.clerkUserId, input.clerkUserId))
   });
 
-  if (!podcast) {
+  if (!podcast || podcast.deletedAt) {
     throw new Error("Podcast not found");
   }
 
@@ -194,13 +200,15 @@ export async function listDashboardEpisodesForUser(clerkUserId: string): Promise
     columns: {
       id: true,
       title: true,
-      imageUrl: true
+      imageUrl: true,
+      deletedAt: true
     },
     where: eq(podcasts.clerkUserId, clerkUserId),
     orderBy: [desc(podcasts.updatedAt)]
   });
 
-  const podcastIds = podcastRows.map((podcast) => podcast.id);
+  const activePodcastRows = podcastRows.filter((podcast) => podcast.deletedAt == null);
+  const podcastIds = activePodcastRows.map((podcast) => podcast.id);
   if (podcastIds.length === 0) {
     return [];
   }
@@ -223,7 +231,7 @@ export async function listDashboardEpisodesForUser(clerkUserId: string): Promise
   });
 
   const podcastById = new Map(
-    podcastRows.map((podcast) => [
+    activePodcastRows.map((podcast) => [
       podcast.id,
       {
         title: podcast.title,
